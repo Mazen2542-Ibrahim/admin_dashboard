@@ -203,14 +203,24 @@ export function TemplateEditor({ template }: TemplateEditorProps) {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div
-                className="prose prose-sm max-w-none rounded-md border p-4"
-                dangerouslySetInnerHTML={{
-                  __html: htmlBody?.replace(
+              <iframe
+                srcDoc={
+                  `<style>a,button,input[type="submit"],input[type="button"]{pointer-events:none!important;cursor:default!important;}</style>` +
+                  (htmlBody ?? "").replace(
                     /\{\{(\w+)\}\}/g,
-                    (_, key) => `<mark class="bg-yellow-100">${key}</mark>`
-                  ) ?? "",
-                }}
+                    (match, key, offset, str) => {
+                      const before = str.slice(0, offset)
+                      const inAttr = /=["'][^"']*$/.test(before)
+                      return inAttr
+                        ? `[${key}]`
+                        : `<mark style="background:#fef08a;padding:0 2px;border-radius:2px">${key}</mark>`
+                    }
+                  )
+                }
+                className="w-full rounded-md border"
+                style={{ height: "480px" }}
+                sandbox=""
+                title="Email preview"
               />
             </CardContent>
           </Card>
