@@ -84,7 +84,7 @@ export function DataTable<TData, TValue>({
   })
 
   const totalPages = pagination
-    ? Math.ceil(pagination.total / pagination.pageSize)
+    ? Math.max(1, Math.ceil(pagination.total / pagination.pageSize))
     : 1
 
   return (
@@ -171,7 +171,7 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      {pagination && totalPages > 1 && (
+      {pagination && (totalPages > 1 || pagination.page > 1) && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
             Page {pagination.page} of {totalPages} ({pagination.total} total)
@@ -189,7 +189,7 @@ export function DataTable<TData, TValue>({
               variant="outline"
               size="icon"
               onClick={() => pagination.onPageChange(pagination.page + 1)}
-              disabled={pagination.page >= totalPages}
+              disabled={pagination.page >= totalPages || pagination.total === 0}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>

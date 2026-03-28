@@ -15,7 +15,7 @@ function buildWhereClause(filters: AuditLogFilters) {
 
 export async function getAuditLogs(filters: AuditLogFilters = {}) {
   const { page = 1, limit = 20 } = filters
-  const offset = (page - 1) * limit
+  const offset = (Math.max(1, page) - 1) * limit
   const where = buildWhereClause(filters)
 
   return db

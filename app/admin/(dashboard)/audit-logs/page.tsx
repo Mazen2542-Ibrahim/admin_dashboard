@@ -36,7 +36,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
     redirect("/admin/dashboard")
   }
 
-  const page = parseInt(searchParams.page ?? "1", 10)
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1)
   const pageSize = 25
   const filters = {
     page,
@@ -124,26 +124,28 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
               Page {page} of {Math.ceil(total / pageSize)} ({total} total)
             </p>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="icon"
-                asChild
-                disabled={page <= 1}
-              >
-                <Link href={`/admin/audit-logs?page=${page - 1}${searchParams.action ? `&action=${searchParams.action}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+              {page <= 1 ? (
+                <Button variant="outline" size="icon" disabled>
                   <ChevronLeft className="h-4 w-4" />
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                asChild
-                disabled={page >= Math.ceil(total / pageSize)}
-              >
-                <Link href={`/admin/audit-logs?page=${page + 1}${searchParams.action ? `&action=${searchParams.action}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                </Button>
+              ) : (
+                <Button variant="outline" size="icon" asChild>
+                  <Link href={`/admin/audit-logs?page=${page - 1}${searchParams.action ? `&action=${searchParams.action}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+              {page >= Math.ceil(total / pageSize) ? (
+                <Button variant="outline" size="icon" disabled>
                   <ChevronRight className="h-4 w-4" />
-                </Link>
-              </Button>
+                </Button>
+              ) : (
+                <Button variant="outline" size="icon" asChild>
+                  <Link href={`/admin/audit-logs?page=${page + 1}${searchParams.action ? `&action=${searchParams.action}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
             </div>
           </CardFooter>
         )}

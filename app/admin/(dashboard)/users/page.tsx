@@ -9,7 +9,7 @@ interface UsersPageProps {
 }
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
-  const page = parseInt(searchParams.page ?? "1", 10)
+  const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1)
   const search = searchParams.search
   const role = searchParams.role
   const status = searchParams.status === "active" || searchParams.status === "inactive"

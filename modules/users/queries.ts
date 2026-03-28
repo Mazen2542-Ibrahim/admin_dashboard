@@ -5,7 +5,7 @@ import type { UserListFilters } from "./types"
 
 export async function getAllUsers(filters: UserListFilters = {}) {
   const { page = 1, limit = 20, search, role, status } = filters
-  const offset = (page - 1) * limit
+  const offset = (Math.max(1, page) - 1) * limit
 
   const conditions = []
   if (search) {
