@@ -49,3 +49,12 @@ export function rateLimit({
   entry.count++
   return { success: true, remaining: limit - entry.count, resetAt: entry.resetAt }
 }
+
+/** Extract the best available client IP from a Next.js / Node request headers object. */
+export function getIp(headers: { get(name: string): string | null }): string {
+  return (
+    headers.get("x-forwarded-for")?.split(",")[0].trim() ??
+    headers.get("x-real-ip") ??
+    "unknown"
+  )
+}

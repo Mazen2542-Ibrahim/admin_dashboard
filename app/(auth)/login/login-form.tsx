@@ -69,6 +69,18 @@ export function LoginForm() {
       return
     }
 
+    if (res.status === 429) {
+      const retryAfter = res.headers.get("Retry-After")
+      const seconds = retryAfter ? parseInt(retryAfter, 10) : null
+      const timeStr = seconds && seconds > 60
+        ? `Try again in ${Math.ceil(seconds / 60)} minutes.`
+        : seconds
+        ? `Try again in ${seconds} seconds.`
+        : "Try again later."
+      toast({ title: "Too many attempts", description: timeStr, variant: "destructive" })
+      return
+    }
+
     if (res.status === 403 && data.code === "ACCOUNT_LOCKED") {
       const unlocksAt = (data as { unlocksAt?: string }).unlocksAt ? new Date((data as { unlocksAt?: string }).unlocksAt!) : null
       const timeStr = unlocksAt
@@ -105,6 +117,16 @@ export function LoginForm() {
       body: JSON.stringify({ email: emailForOtp, otp: values.otp }),
       credentials: "include",
     })
+
+    if (res.status === 429) {
+      const retryAfter = res.headers.get("Retry-After")
+      const seconds = retryAfter ? parseInt(retryAfter, 10) : null
+      const timeStr = seconds && seconds > 60
+        ? `Try again in ${Math.ceil(seconds / 60)} minutes.`
+        : seconds ? `Try again in ${seconds} seconds.` : "Try again later."
+      otpForm.setError("otp", { message: `Too many attempts. ${timeStr}` })
+      return
+    }
 
     if (!res.ok) {
       let data: { error?: string } = {}

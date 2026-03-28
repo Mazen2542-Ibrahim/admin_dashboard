@@ -4,8 +4,10 @@ import { eq } from "drizzle-orm"
 import { makeSignature } from "better-auth/crypto"
 import { getUserByEmail } from "@/modules/users/queries"
 import { logAudit } from "@/modules/audit-logs/service"
+import { rateLimit, getIp } from "@/lib/rate-limit"
+import { type NextRequest } from "next/server"
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   let body: { email?: string; otp?: string }
   try {
     body = await request.json()
@@ -16,6 +18,15 @@ export async function POST(request: Request) {
   const { email, otp } = body
   if (!email || !otp) {
     return Response.json({ error: "Email and OTP are required" }, { status: 400 })
+  }
+
+  const ip = getIp(request.headers)
+  const rl = rateLimit({ key: `otp-verify:${ip}:${email}`, limit: 5, windowMs: 15 * 60 * 1000 })
+  if (!rl.success) {
+    return Response.json(
+      { error: "Too many attempts. Please try again later." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
+    )
   }
 
   const user = await getUserByEmail(email)
