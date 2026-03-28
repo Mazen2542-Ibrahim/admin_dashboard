@@ -3,6 +3,8 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -13,11 +15,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "@/components/ui/use-toast"
 import {
   updateProfileAction,
-  changeEmailDirectAction,
+  requestEmailChangeAction,
   logPasswordChangedAction,
 } from "@/modules/users/actions"
-import { changePassword, changeEmail } from "@/lib/auth-client"
-import { Loader2, ShieldCheck, ShieldOff } from "lucide-react"
+import { changePassword } from "@/lib/auth-client"
+import { Loader2, ShieldCheck, ShieldOff, Mail } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 
 interface ProfileTabsProps {
@@ -324,6 +326,7 @@ function ChangePasswordSection() {
 
 const emailSchema = z.object({
   newEmail: z.string().email("Invalid email address"),
+  currentPassword: z.string().min(1, "Password is required"),
 })
 type EmailValues = z.infer<typeof emailSchema>
 
@@ -334,44 +337,75 @@ function ChangeEmailSection({
   smtpConfigured: boolean
   currentEmail: string
 }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null)
+
+  useEffect(() => {
+    const changed = searchParams.get("emailChanged")
+    const error = searchParams.get("emailChangeError")
+    if (changed === "1") {
+      toast({ title: "Email updated", description: "Your email address has been updated." })
+      router.replace("/profile")
+    } else if (error === "expired") {
+      toast({
+        title: "Link expired",
+        description: "This verification link has expired. Please request a new one.",
+        variant: "destructive",
+      })
+      router.replace("/profile")
+    } else if (error === "invalid") {
+      toast({
+        title: "Invalid link",
+        description: "Invalid verification link.",
+        variant: "destructive",
+      })
+      router.replace("/profile")
+    }
+  }, [searchParams, router])
+
   const form = useForm<EmailValues>({
     resolver: zodResolver(emailSchema),
-    defaultValues: { newEmail: "" },
+    defaultValues: { newEmail: "", currentPassword: "" },
   })
 
+  if (!smtpConfigured) {
+    return (
+      <div className="rounded-md border bg-muted/50 px-4 py-3 text-sm text-muted-foreground">
+        Email changes require SMTP to be configured. Contact your administrator.
+      </div>
+    )
+  }
+
+  if (pendingEmail) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-start gap-3 rounded-md border bg-muted/50 px-4 py-3 text-sm">
+          <Mail className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <p>
+            Verification link sent to <span className="font-medium">{pendingEmail}</span>. Click it
+            to confirm your new address. The link expires in 24 hours.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => { setPendingEmail(null); form.reset() }}>
+          Change a different address
+        </Button>
+      </div>
+    )
+  }
+
   async function onSubmit(values: EmailValues) {
-    if (values.newEmail === currentEmail) {
-      form.setError("newEmail", { message: "New email must be different from your current email" })
+    const result = await requestEmailChangeAction(values.newEmail, values.currentPassword)
+    if ("error" in result && result.error) {
+      const msg =
+        typeof result.error === "object" && "message" in result.error
+          ? result.error.message
+          : "Failed to request email change"
+      toast({ title: "Error", description: String(msg), variant: "destructive" })
       return
     }
-
-    if (smtpConfigured) {
-      const result = await changeEmail({ newEmail: values.newEmail, callbackURL: "/profile" })
-      if (result.error) {
-        toast({
-          title: "Error",
-          description: result.error.message ?? "Failed to initiate email change",
-          variant: "destructive",
-        })
-        return
-      }
-      toast({
-        title: "Verification email sent",
-        description: `A link was sent to ${values.newEmail}. Click it to confirm your new address.`,
-      })
-      form.reset()
-    } else {
-      const result = await changeEmailDirectAction(values.newEmail)
-      if ("error" in result && result.error) {
-        const msg =
-          typeof result.error === "object" && "message" in result.error
-            ? result.error.message
-            : "Failed to change email"
-        toast({ title: "Error", description: String(msg), variant: "destructive" })
-        return
-      }
-      toast({ title: "Email updated", description: "Your email address has been changed." })
-      form.reset()
+    if (result.success && result.pendingEmail) {
+      setPendingEmail(result.pendingEmail)
     }
   }
 
@@ -380,9 +414,7 @@ function ChangeEmailSection({
       <div>
         <p className="text-sm font-medium">Change Email Address</p>
         <p className="text-sm text-muted-foreground mt-0.5">
-          {smtpConfigured
-            ? "A verification link will be sent to your new address before the change is applied."
-            : "Your email address will be updated immediately."}
+          A verification link will be sent to your new address before the change is applied.
         </p>
       </div>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
@@ -399,9 +431,21 @@ function ChangeEmailSection({
             <p className="text-sm text-destructive">{form.formState.errors.newEmail.message}</p>
           )}
         </div>
+        <div className="space-y-1">
+          <Label htmlFor="emailCurrentPassword">Current Password</Label>
+          <Input
+            id="emailCurrentPassword"
+            type="password"
+            autoComplete="current-password"
+            {...form.register("currentPassword")}
+          />
+          {form.formState.errors.currentPassword && (
+            <p className="text-sm text-destructive">{form.formState.errors.currentPassword.message}</p>
+          )}
+        </div>
         <Button type="submit" disabled={form.formState.isSubmitting} className="w-full sm:w-auto">
           {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {smtpConfigured ? "Send Verification" : "Change Email"}
+          Send Verification
         </Button>
       </form>
     </div>

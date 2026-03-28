@@ -93,3 +93,12 @@ export async function getActiveSessionsByUserId(userId: string) {
     .where(and(eq(sessions.userId, userId), gt(sessions.expiresAt, new Date())))
     .orderBy(desc(sessions.createdAt))
 }
+
+export async function getCredentialAccount(userId: string) {
+  const [account] = await db
+    .select()
+    .from(accounts)
+    .where(and(eq(accounts.userId, userId), eq(accounts.providerId, "credential")))
+    .limit(1)
+  return account ?? null
+}

@@ -22,7 +22,10 @@ import {
   deleteSessionById,
   deleteAllSessionsByUserId,
 } from "./service"
-import { getUserByEmail, getUserById, getActiveSessionsByUserId } from "./queries"
+import { getUserByEmail, getUserById, getActiveSessionsByUserId, getCredentialAccount } from "./queries"
+import { db } from "@/lib/db"
+import { verifications } from "@/db/schema"
+import { eq } from "drizzle-orm"
 import { logAudit } from "@/modules/audit-logs/service"
 import { auth } from "@/lib/auth"
 
@@ -188,30 +191,55 @@ export async function sendWelcomeEmailAction(email: string, name: string): Promi
   })
 }
 
-export async function changeEmailDirectAction(newEmail: string) {
+export async function requestEmailChangeAction(newEmail: string, currentPassword: string) {
   try {
     const session = await getSession()
     if (!session?.user) return { error: { message: "You must be signed in" } }
 
-    const parsed = z.string().email("Invalid email address").safeParse(newEmail)
-    if (!parsed.success) return { error: { message: "Invalid email address" } }
+    const actor = session.user as { id: string; email: string; name: string }
 
-    const actor = session.user as { id: string; email: string }
-    if (parsed.data === actor.email) {
-      return { error: { message: "New email must be different from your current email" } }
-    }
+    const emailParsed = z.string().email().safeParse(newEmail)
+    if (!emailParsed.success) return { error: { message: "Invalid email address" } }
+    if (emailParsed.data === actor.email) return { error: { message: "New email must be different" } }
 
-    await updateUser(actor.id, { email: parsed.data, emailVerified: false }, actor.id, actor.email)
+    const { verifyPassword } = await import("better-auth/crypto")
+    const account = await getCredentialAccount(actor.id)
+    if (!account?.password) return { error: { message: "No password set for this account" } }
+    const valid = await verifyPassword({ hash: account.password, password: currentPassword })
+    if (!valid) return { error: { message: "Current password is incorrect" } }
+
+    const existing = await getUserByEmail(emailParsed.data)
+    if (existing) return { error: { message: "Email address is already in use" } }
+
+    await db.delete(verifications).where(eq(verifications.identifier, `email-change:${actor.id}`))
+
+    const token = crypto.randomUUID()
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    await db.insert(verifications).values({
+      id: token,
+      identifier: `email-change:${actor.id}`,
+      value: emailParsed.data,
+      expiresAt,
+    })
+
+    const baseURL = process.env.BETTER_AUTH_URL ?? "http://localhost:3000"
+    const verificationUrl = `${baseURL}/api/change-email?token=${token}`
+    await sendTemplateEmailByName("email-verification", emailParsed.data, {
+      userName: actor.name,
+      verificationUrl,
+      appName: process.env.NEXT_PUBLIC_APP_NAME ?? appConfig.name,
+    })
+
     await logAudit({
       actorId: actor.id,
       actorEmail: actor.email,
-      action: "user.email_changed",
+      action: "user.email_change_requested",
       resourceType: "user",
       resourceId: actor.id,
-      metadata: { oldEmail: actor.email, newEmail: parsed.data },
+      metadata: { newEmail: emailParsed.data },
     })
-    revalidatePath("/profile")
-    return { success: true }
+
+    return { success: true, pendingEmail: emailParsed.data }
   } catch (err) {
     return { error: { message: (err as Error).message } }
   }
@@ -235,24 +263,6 @@ export async function logPasswordChangedAction(): Promise<void> {
   }
 }
 
-/** Called client-side after better-auth initiates an email-change verification */
-export async function logEmailChangeRequestedAction(newEmail: string): Promise<void> {
-  try {
-    const session = await getSession()
-    if (!session?.user) return
-    const user = session.user as { id: string; email: string }
-    await logAudit({
-      actorId: user.id,
-      actorEmail: user.email,
-      action: "user.email_change_requested",
-      resourceType: "user",
-      resourceId: user.id,
-      metadata: { newEmail },
-    })
-  } catch {
-    // Never throw — must not break the UI flow
-  }
-}
 
 export async function resetPasswordAction(formData: unknown) {
   try {
