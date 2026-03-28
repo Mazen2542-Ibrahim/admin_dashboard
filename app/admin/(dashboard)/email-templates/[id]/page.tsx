@@ -13,6 +13,9 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
     redirect("/admin/dashboard")
   }
 
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!uuidRegex.test(params.id)) notFound()
+
   const template = await getTemplateById(params.id)
   if (!template) notFound()
 
