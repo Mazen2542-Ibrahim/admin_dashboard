@@ -1,0 +1,157 @@
+import { db } from "@/lib/db"
+import { users, accounts } from "@/db/schema"
+import { eq } from "drizzle-orm"
+import { logAudit } from "@/modules/audit-logs/service"
+import { getUserByEmail } from "./queries"
+import type { CreateUserInput, UpdateUserInput } from "./types"
+import { hashPassword } from "better-auth/crypto"
+
+export async function createUser(
+  input: CreateUserInput,
+  actorId?: string,
+  actorEmail?: string
+) {
+  const existing = await getUserByEmail(input.email)
+  if (existing) {
+    throw new Error("A user with this email already exists")
+  }
+
+  const passwordHash = await hashPassword(input.password)
+
+  const [newUser] = await db
+    .insert(users)
+    .values({
+      name: input.name,
+      email: input.email,
+      role: input.role,
+      emailVerified: false,
+      isActive: true,
+    })
+    .returning()
+
+  // Store password in accounts table (better-auth pattern)
+  await db.insert(accounts).values({
+    id: crypto.randomUUID(),
+    userId: newUser.id,
+    accountId: input.email,
+    providerId: "credential",
+    password: passwordHash,
+  })
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "user.created",
+    resourceType: "user",
+    resourceId: newUser.id,
+    metadata: { email: newUser.email, role: newUser.role },
+  })
+
+  return newUser
+}
+
+export async function updateUser(
+  id: string,
+  input: UpdateUserInput,
+  actorId?: string,
+  actorEmail?: string
+) {
+  if (input.email) {
+    const existing = await getUserByEmail(input.email)
+    if (existing && existing.id !== id) {
+      throw new Error("A user with this email already exists")
+    }
+  }
+
+  const [updated] = await db
+    .update(users)
+    .set(input)
+    .where(eq(users.id, id))
+    .returning()
+
+  if (!updated) throw new Error("User not found")
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "user.updated",
+    resourceType: "user",
+    resourceId: id,
+    metadata: input as Record<string, unknown>,
+  })
+
+  return updated
+}
+
+/** Soft delete — sets isActive to false */
+export async function deleteUser(
+  id: string,
+  actorId?: string,
+  actorEmail?: string
+) {
+  const [updated] = await db
+    .update(users)
+    .set({ isActive: false })
+    .where(eq(users.id, id))
+    .returning()
+
+  if (!updated) throw new Error("User not found")
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "user.deactivated",
+    resourceType: "user",
+    resourceId: id,
+    metadata: { email: updated.email },
+  })
+
+  return updated
+}
+
+/** Hard delete — permanently removes user. Super admin only. */
+export async function hardDeleteUser(
+  id: string,
+  actorId?: string,
+  actorEmail?: string
+) {
+  const [deleted] = await db
+    .delete(users)
+    .where(eq(users.id, id))
+    .returning()
+
+  if (!deleted) throw new Error("User not found")
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "user.deleted",
+    resourceType: "user",
+    resourceId: id,
+    metadata: { email: deleted.email },
+  })
+
+  return deleted
+}
+
+export async function resetUserPassword(
+  userId: string,
+  newPassword: string,
+  actorId?: string,
+  actorEmail?: string
+) {
+  const passwordHash = await hashPassword(newPassword)
+
+  await db
+    .update(accounts)
+    .set({ password: passwordHash })
+    .where(eq(accounts.userId, userId))
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "user.password_reset",
+    resourceType: "user",
+    resourceId: userId,
+  })
+}

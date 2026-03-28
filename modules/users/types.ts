@@ -1,0 +1,35 @@
+/** The three built-in authorization levels used by requireRole(). */
+export type SystemRole = "super_admin" | "admin" | "user"
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image: string | null
+  role: string
+  isActive: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface CreateUserInput {
+  name: string
+  email: string
+  password: string
+  role: string
+}
+
+export interface UpdateUserInput {
+  name?: string
+  email?: string
+  emailVerified?: boolean
+  role?: string
+  isActive?: boolean
+}
+
+export interface UserListFilters {
+  page?: number
+  limit?: number
+  search?: string
+}

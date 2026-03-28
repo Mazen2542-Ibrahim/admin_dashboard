@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/mogh/Developer/admin_dashboard -type f -name package.json -o -name *.tsx -o -name *.ts -o -name .env* -o -name tsconfig.json -o -name next.config.*)",
+      "Bash(bun install:*)",
+      "Read(//usr/local/bin/**)",
+      "Read(//Users/mogh/.bun/bin/**)",
+      "Bash(/Users/mogh/.bun/bin/bun install:*)",
+      "Bash(/Users/mogh/.bun/bin/bun run:*)",
+      "Bash(/Users/mogh/.bun/bin/bun add:*)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''dependencies'''',{}\\), indent=2\\)\\)\")",
+      "Bash(find /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist -name *.mjs)",
+      "Bash(node -e \"const ba = require\\(''/Users/mogh/Developer/admin_dashboard/node_modules/better-auth''\\); console.log\\(Object.keys\\(ba\\).filter\\(k => k.toLowerCase\\(\\).includes\\(''hash''\\) || k.toLowerCase\\(\\).includes\\(''pass''\\)\\)\\)\")",
+      "Bash(node:*)",
+      "Bash(ls /Users/mogh/Developer/admin_dashboard/node_modules/@better-fetch/fetch/dist/*.mjs)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''main'''',''''''''\\), d.get\\(''''module'''',''''''''\\), list\\(d.get\\(''''exports'''',{}\\).keys\\(\\)\\)[:5]\\)\")",
+      "Bash(command -v bun)",
+      "Bash(pkill -f 'next dev')",
+      "Bash(lsof -ti:3001)",
+      "Bash(xargs kill:*)",
+      "Bash(bun run:*)",
+      "Bash(~/.bun/bin/bun run:*)",
+      "Bash(grep -rn \"roleEnum\\\\|super_admin\\\\|admin\\\\|user\\\\|role.*enum\" /Users/mogh/Developer/admin_dashboard/db /Users/mogh/Developer/admin_dashboard/modules /Users/mogh/Developer/admin_dashboard/lib --include=*.ts)",
+      "Bash(~/.bun/bin/bun db:generate 2>&1)",
+      "Bash(~/.bun/bin/bun db:migrate 2>&1)",
+      "Bash(~/.bun/bin/bun db:seed 2>&1)",
+      "Bash(psql:*)",
+      "Bash(find /Users/mogh/Developer/admin_dashboard -type f -path */app/*/settings* -o -path */app/profile/*)",
+      "Bash(grep -r \"verifyPassword\\\\|hashPassword\\\\|better-auth/crypto\" /Users/mogh/Developer/admin_dashboard --include=*.ts --include=*.tsx -l)",
+      "Bash(find /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist -name cookies* -type f)",
+      "Bash(ls /Users/mogh/Developer/admin_dashboard/app/admin/\\\\\\(dashboard\\\\\\)/)",
+      "Bash(ls:*)",
+      "Bash(bun:*)",
+      "Bash(grep -rn \"requestPasswordReset\\\\|forgetPassword\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/ --include=*.mjs)",
+      "Bash(~/.bun/bin/bun -e \"const { createAuthClient } = require\\(''''better-auth/react''''\\); const c = createAuthClient\\({}\\); console.log\\(Object.keys\\(c\\).join\\(''''\\\\n''''\\)\\)\")",
+      "Bash(grep -rn \"forgetPassword\\\\|requestPasswordReset\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/ --include=*.mjs)"
+    ]
+  }
+}
