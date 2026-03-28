@@ -33,7 +33,15 @@
       "Bash(bun:*)",
       "Bash(grep -rn \"requestPasswordReset\\\\|forgetPassword\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/ --include=*.mjs)",
       "Bash(~/.bun/bin/bun -e \"const { createAuthClient } = require\\(''''better-auth/react''''\\); const c = createAuthClient\\({}\\); console.log\\(Object.keys\\(c\\).join\\(''''\\\\n''''\\)\\)\")",
-      "Bash(grep -rn \"forgetPassword\\\\|requestPasswordReset\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/ --include=*.mjs)"
+      "Bash(grep -rn \"forgetPassword\\\\|requestPasswordReset\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/ --include=*.mjs)",
+      "Bash(ls -la /Users/mogh/Developer/admin_dashboard/app/admin/\\\\\\(dashboard\\\\\\)/users/)",
+      "Bash(grep -r \"revokeSession\\\\|listSessions\\\\|revokeOtherSessions\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist --include=*.d.mts)",
+      "Bash(grep -n \"listSessions\\\\|revokeSession\\\\|revokeOtherSessions\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/client/*.d.mts)",
+      "Bash(ls /Users/mogh/Developer/admin_dashboard/app/admin/\\\\\\(dashboard\\\\\\)/settings/)",
+      "Bash(/Users/mogh/.bun/bin/bun db:generate 2>&1)",
+      "Bash(/Users/mogh/.bun/bin/bun db:migrate 2>&1)",
+      "Bash(grep -r \"forgetPassword\\\\|forget-password\\\\|requestPasswordReset\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/*.js)",
+      "Bash(grep -o \"\"[a-zA-Z]*[Pp]assword[a-zA-Z]*\"\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/auth/full.d.mts)"
     ]
   }
 }
