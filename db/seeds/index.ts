@@ -202,7 +202,9 @@ async function seed() {
     })
 
     console.log(`✅ Super admin created: ${SUPER_ADMIN_EMAIL}`)
-    console.log(`   Password: ${SUPER_ADMIN_PASSWORD}`)
+    if (!process.env.SEED_ADMIN_PASSWORD) {
+      console.log("   Password: Admin1234! (default — set SEED_ADMIN_PASSWORD to override)")
+    }
     console.log("   ⚠️  Change this password after first login!")
   } else {
     console.log(`ℹ️  Super admin already exists: ${SUPER_ADMIN_EMAIL}`)

@@ -95,7 +95,7 @@ async function POST(req: NextRequest) {
 
       if (settings.emailOtpEnabled) {
         // Generate 6-digit OTP, store in verifications table
-        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+        const otp = String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000)
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
         const identifier = `otp-login-${user.id}`
 
