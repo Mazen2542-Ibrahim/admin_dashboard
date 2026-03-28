@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { getUserById } from "@/modules/users/queries"
 import { getAllRoles } from "@/modules/roles/queries"
 import { getSession } from "@/lib/auth"
@@ -8,9 +7,9 @@ import { UserDetailTabs } from "./user-detail-tabs"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { formatDate, getInitials } from "@/lib/utils"
-import { ShieldCheck, ShieldOff, ChevronLeft } from "lucide-react"
+import { ShieldCheck, ShieldOff } from "lucide-react"
+import { Breadcrumb } from "@/components/layout/breadcrumb"
 
 interface UserDetailPageProps {
   params: { id: string }
@@ -36,17 +35,10 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild className="-ml-2">
-          <Link href="/admin/users">
-            <ChevronLeft className="h-4 w-4 mr-1" />
-            Users
-          </Link>
-        </Button>
-        <span className="text-muted-foreground">/</span>
-        <span className="text-sm font-medium truncate">{user.name}</span>
-      </div>
+      <Breadcrumb items={[
+        { label: "Users", href: "/admin/users" },
+        { label: user.name ?? user.email },
+      ]} />
 
       {/* Hero card */}
       <Card className="overflow-hidden">

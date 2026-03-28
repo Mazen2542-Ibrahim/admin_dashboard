@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { getTemplateById } from "@/modules/email-templates/queries"
 import { features } from "@/config/features.config"
 import { TemplateEditor } from "../template-editor"
+import { Breadcrumb } from "@/components/layout/breadcrumb"
 import type { EmailTemplate } from "@/modules/email-templates/types"
 
 interface EditTemplatePageProps {
@@ -21,6 +22,10 @@ export default async function EditTemplatePage({ params }: EditTemplatePageProps
 
   return (
     <div className="space-y-6">
+      <Breadcrumb items={[
+        { label: "Email Templates", href: "/admin/email-templates" },
+        { label: template.name },
+      ]} />
       <div>
         <h2 className="text-2xl font-bold tracking-tight">
           Edit Template: {template.name}
