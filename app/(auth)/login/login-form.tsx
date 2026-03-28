@@ -69,6 +69,15 @@ export function LoginForm() {
       return
     }
 
+    if (res.status === 403 && data.code === "ACCOUNT_LOCKED") {
+      const unlocksAt = (data as { unlocksAt?: string }).unlocksAt ? new Date((data as { unlocksAt?: string }).unlocksAt!) : null
+      const timeStr = unlocksAt
+        ? `Try again after ${unlocksAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}.`
+        : "Try again later."
+      toast({ title: "Account locked", description: `Too many failed attempts. ${timeStr}`, variant: "destructive" })
+      return
+    }
+
     if (res.status === 403 && data.code === "EMAIL_UNVERIFIED") {
       setUnverifiedEmail(values.email)
       return

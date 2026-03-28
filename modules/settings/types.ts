@@ -4,6 +4,9 @@ export type AppSettings = {
   registrationEnabled: boolean
   emailOtpEnabled: boolean
   auditLogRetentionDays: number | null
+  lockoutEnabled: boolean
+  maxFailedAttempts: number
+  lockoutDurationMinutes: number
   createdAt: Date
   updatedAt: Date
 }
@@ -13,4 +16,7 @@ export type UpdateSettingsInput = {
   registrationEnabled: boolean
   emailOtpEnabled: boolean
   auditLogRetentionDays: number | null
+  lockoutEnabled: boolean
+  maxFailedAttempts: number
+  lockoutDurationMinutes: number
 }

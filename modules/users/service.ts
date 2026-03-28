@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { users, accounts, sessions } from "@/db/schema"
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { logAudit } from "@/modules/audit-logs/service"
 import { getUserByEmail } from "./queries"
 import type { CreateUserInput, UpdateUserInput } from "./types"
@@ -150,6 +150,61 @@ export async function deleteSessionById(sessionId: string, expectedUserId: strin
 
 export async function deleteAllSessionsByUserId(userId: string) {
   await db.delete(sessions).where(eq(sessions.userId, userId))
+}
+
+export async function recordFailedLoginAttempt(
+  userId: string,
+  maxAttempts: number,
+  lockoutDurationMinutes: number
+): Promise<void> {
+  const [updated] = await db
+    .update(users)
+    .set({ failedLoginAttempts: sql`${users.failedLoginAttempts} + 1` })
+    .where(eq(users.id, userId))
+    .returning({ failedLoginAttempts: users.failedLoginAttempts, email: users.email })
+
+  if (!updated) return
+
+  if (updated.failedLoginAttempts >= maxAttempts) {
+    const lockedUntil = new Date(Date.now() + lockoutDurationMinutes * 60 * 1000)
+    await db.update(users).set({ lockedUntil }).where(eq(users.id, userId))
+    await logAudit({
+      action: "user.account_locked",
+      resourceType: "user",
+      resourceId: userId,
+      metadata: { reason: "too_many_failed_attempts", failedLoginAttempts: updated.failedLoginAttempts, lockedUntil },
+    })
+  }
+}
+
+export async function clearFailedLoginAttempts(userId: string): Promise<void> {
+  await db
+    .update(users)
+    .set({ failedLoginAttempts: 0, lockedUntil: null })
+    .where(eq(users.id, userId))
+}
+
+export async function unlockUserAccount(
+  userId: string,
+  actorId?: string,
+  actorEmail?: string
+): Promise<void> {
+  const [updated] = await db
+    .update(users)
+    .set({ failedLoginAttempts: 0, lockedUntil: null })
+    .where(eq(users.id, userId))
+    .returning({ email: users.email })
+
+  if (!updated) throw new Error("User not found")
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "user.account_unlocked",
+    resourceType: "user",
+    resourceId: userId,
+    metadata: { email: updated.email },
+  })
 }
 
 export async function resetUserPassword(

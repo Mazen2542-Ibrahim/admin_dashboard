@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { toNextJsHandler } from "better-auth/next-js"
 import { verifyPassword } from "better-auth/crypto"
 import { getUserByEmail, getAccountByUserId } from "@/modules/users/queries"
+import { recordFailedLoginAttempt, clearFailedLoginAttempts } from "@/modules/users/service"
 import { getAppSettings } from "@/modules/settings/queries"
 import { sendTemplateEmailByName } from "@/modules/email-templates/service"
 import { appConfig } from "@/config/app.config"
@@ -55,37 +56,56 @@ async function POST(req: NextRequest) {
       )
     }
 
-    // 4. Check OTP (if enabled) — verify password first, then return OTP_REQUIRED
-    if (settings?.emailOtpEnabled && password) {
+    // 4. Check lockout
+    if (settings?.lockoutEnabled && user.lockedUntil && user.lockedUntil > new Date()) {
+      return NextResponse.json(
+        { code: "ACCOUNT_LOCKED", error: "Account temporarily locked due to too many failed attempts.", unlocksAt: user.lockedUntil },
+        { status: 403 }
+      )
+    }
+
+    // 5. Unified password check (for lockout tracking and/or OTP)
+    if ((settings?.lockoutEnabled || settings?.emailOtpEnabled) && password) {
       const account = await getAccountByUserId(user.id)
       if (!account?.password) return betterAuthHandler.POST(req)
 
       const valid = await verifyPassword({ hash: account.password, password })
+
       if (!valid) {
+        if (settings.lockoutEnabled) {
+          await recordFailedLoginAttempt(user.id, settings.maxFailedAttempts, settings.lockoutDurationMinutes)
+        }
         return NextResponse.json({ error: "Invalid email or password." }, { status: 401 })
       }
 
-      // Generate 6-digit OTP, store in verifications table
-      const otp = Math.floor(100000 + Math.random() * 900000).toString()
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-      const identifier = `otp-login-${user.id}`
+      // Correct password — reset counter
+      if (settings.lockoutEnabled) {
+        await clearFailedLoginAttempts(user.id)
+      }
 
-      // Delete any existing OTP for this user then insert fresh
-      await db.delete(verifications).where(eq(verifications.identifier, identifier))
-      await db.insert(verifications).values({
-        id: crypto.randomUUID(),
-        identifier,
-        value: otp,
-        expiresAt,
-      })
+      if (settings.emailOtpEnabled) {
+        // Generate 6-digit OTP, store in verifications table
+        const otp = Math.floor(100000 + Math.random() * 900000).toString()
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+        const identifier = `otp-login-${user.id}`
 
-      await sendTemplateEmailByName("login-otp", user.email, {
-        userName: user.name,
-        otpCode: otp,
-        appName: appConfig.name,
-      })
+        // Delete any existing OTP for this user then insert fresh
+        await db.delete(verifications).where(eq(verifications.identifier, identifier))
+        await db.insert(verifications).values({
+          id: crypto.randomUUID(),
+          identifier,
+          value: otp,
+          expiresAt,
+        })
 
-      return NextResponse.json({ code: "OTP_REQUIRED" }, { status: 200 })
+        await sendTemplateEmailByName("login-otp", user.email, {
+          userName: user.name,
+          otpCode: otp,
+          appName: appConfig.name,
+        })
+
+        return NextResponse.json({ code: "OTP_REQUIRED" }, { status: 200 })
+      }
     }
   }
 

@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { formatDate, getInitials } from "@/lib/utils"
-import { ShieldCheck, ShieldOff } from "lucide-react"
+import { ShieldCheck, ShieldOff, Lock } from "lucide-react"
 import { Breadcrumb } from "@/components/layout/breadcrumb"
 
 interface UserDetailPageProps {
@@ -71,6 +71,12 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
                     : <ShieldOff className="h-3 w-3" />}
                   {user.emailVerified ? "Verified" : "Unverified"}
                 </Badge>
+                {user.lockedUntil && user.lockedUntil > new Date() && (
+                  <Badge variant="warning" className="flex items-center gap-1 text-xs">
+                    <Lock className="h-3 w-3" />
+                    Locked
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -88,6 +94,7 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
         isSelf={isSelf}
         smtpConfigured={!!smtpSettings}
         currentSessionId={currentSessionId}
+        isLocked={!!(user.lockedUntil && user.lockedUntil > new Date())}
       />
     </div>
   )

@@ -27,6 +27,8 @@ export async function getAllUsers(filters: UserListFilters = {}) {
       role: users.role,
       isActive: users.isActive,
       lastLoginAt: users.lastLoginAt,
+      failedLoginAttempts: users.failedLoginAttempts,
+      lockedUntil: users.lockedUntil,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })

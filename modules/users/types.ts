@@ -10,6 +10,8 @@ export interface User {
   role: string
   isActive: boolean
   lastLoginAt?: Date | null
+  failedLoginAttempts: number
+  lockedUntil: Date | null
   createdAt: Date
   updatedAt: Date
 }

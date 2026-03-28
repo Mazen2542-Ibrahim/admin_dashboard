@@ -21,6 +21,7 @@ import {
   updateLastLoginAt,
   deleteSessionById,
   deleteAllSessionsByUserId,
+  unlockUserAccount,
 } from "./service"
 import { getUserByEmail, getUserById, getActiveSessionsByUserId, getCredentialAccount } from "./queries"
 import { db } from "@/lib/db"
@@ -414,6 +415,18 @@ export async function sendVerificationEmailAdminAction(userId: string) {
       resourceId: userId,
       metadata: { email: user.email },
     })
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function unlockUserAccountAction(userId: string) {
+  try {
+    const session = await requirePermission("users:update")
+    const actor = session.user as { id: string; email: string }
+    await unlockUserAccount(userId, actor.id, actor.email)
+    revalidatePath(`/admin/users/${userId}`)
     return { success: true }
   } catch (err) {
     return { error: { message: (err as Error).message } }

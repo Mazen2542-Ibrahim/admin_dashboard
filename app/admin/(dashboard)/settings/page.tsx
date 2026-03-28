@@ -2,6 +2,7 @@ import { getAppSettings } from "@/modules/settings/queries"
 import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { SettingsForm } from "@/components/settings/settings-form"
 import { AuditLogRetentionPanel } from "@/components/settings/audit-log-retention-panel"
+import { AccountSecurityPanel } from "@/components/settings/account-security-panel"
 import {
   Card,
   CardContent,
@@ -27,6 +28,9 @@ export default async function SettingsPage() {
     registrationEnabled: true,
     emailOtpEnabled: false,
     auditLogRetentionDays: null,
+    lockoutEnabled: false,
+    maxFailedAttempts: 5,
+    lockoutDurationMinutes: 60,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -74,6 +78,18 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <AuditLogRetentionPanel settings={defaultSettings} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Account Security</CardTitle>
+          <CardDescription>
+            Protect accounts against brute-force login attempts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AccountSecurityPanel settings={defaultSettings} />
         </CardContent>
       </Card>
     </div>

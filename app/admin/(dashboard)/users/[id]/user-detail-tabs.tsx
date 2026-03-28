@@ -26,6 +26,7 @@ import {
   deleteUserAction,
   reactivateUserAction,
   hardDeleteUserAction,
+  unlockUserAccountAction,
 } from "@/modules/users/actions"
 import type { User } from "@/modules/users/types"
 import { UserSecurityTab } from "./user-security-tab"
@@ -45,6 +46,7 @@ interface UserDetailTabsProps {
   isSelf: boolean
   smtpConfigured: boolean
   currentSessionId?: string
+  isLocked?: boolean
 }
 
 export function UserDetailTabs({
@@ -53,6 +55,7 @@ export function UserDetailTabs({
   isSelf,
   smtpConfigured,
   currentSessionId,
+  isLocked = false,
 }: UserDetailTabsProps) {
   const router = useRouter()
   const [isSaving, setIsSaving] = React.useState(false)
@@ -60,6 +63,7 @@ export function UserDetailTabs({
   const [reactivateOpen, setReactivateOpen] = React.useState(false)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
   const [isActionLoading, setIsActionLoading] = React.useState(false)
+  const [isUnlocking, setIsUnlocking] = React.useState(false)
 
   const form = useForm<ProfileForm>({
     resolver: zodResolver(profileSchema),
@@ -124,6 +128,22 @@ export function UserDetailTabs({
       })
     } else {
       toast({ title: "User reactivated" })
+      router.refresh()
+    }
+  }
+
+  async function handleUnlock() {
+    setIsUnlocking(true)
+    const result = await unlockUserAccountAction(user.id)
+    setIsUnlocking(false)
+    if ("error" in result && result.error) {
+      toast({
+        title: "Error",
+        description: result.error.message ?? "Failed to unlock account",
+        variant: "destructive",
+      })
+    } else {
+      toast({ title: "Account unlocked" })
       router.refresh()
     }
   }
@@ -219,6 +239,16 @@ export function UserDetailTabs({
           <div className="space-y-3">
             <h3 className="text-sm font-medium text-muted-foreground">Danger Zone</h3>
             <div className="flex flex-wrap gap-3">
+              {isLocked && !isSelf && (
+                <Button
+                  variant="outline"
+                  disabled={isUnlocking}
+                  onClick={handleUnlock}
+                >
+                  {isUnlocking && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Unlock Account
+                </Button>
+              )}
               {user.isActive ? (
                 <Button
                   variant="outline"

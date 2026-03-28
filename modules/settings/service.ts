@@ -19,6 +19,9 @@ export async function upsertAppSettings(
         registrationEnabled: data.registrationEnabled,
         emailOtpEnabled: data.emailOtpEnabled,
         auditLogRetentionDays: data.auditLogRetentionDays,
+        lockoutEnabled: data.lockoutEnabled,
+        maxFailedAttempts: data.maxFailedAttempts,
+        lockoutDurationMinutes: data.lockoutDurationMinutes,
       })
   } else {
     await db.insert(appSettings).values({
@@ -26,6 +29,9 @@ export async function upsertAppSettings(
       registrationEnabled: data.registrationEnabled,
       emailOtpEnabled: data.emailOtpEnabled,
       auditLogRetentionDays: data.auditLogRetentionDays,
+      lockoutEnabled: data.lockoutEnabled,
+      maxFailedAttempts: data.maxFailedAttempts,
+      lockoutDurationMinutes: data.lockoutDurationMinutes,
     })
   }
 

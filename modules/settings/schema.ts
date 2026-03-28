@@ -5,6 +5,9 @@ export const updateSettingsSchema = z.object({
   registrationEnabled: z.boolean(),
   emailOtpEnabled: z.boolean(),
   auditLogRetentionDays: z.number().int().positive().nullable(),
+  lockoutEnabled: z.boolean(),
+  maxFailedAttempts: z.number().int().min(1).max(100),
+  lockoutDurationMinutes: z.number().int().min(1),
 })
 
 export type UpdateSettingsSchema = z.infer<typeof updateSettingsSchema>
