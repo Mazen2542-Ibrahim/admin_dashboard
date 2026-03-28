@@ -11,9 +11,10 @@ import { cn } from "@/lib/utils"
 interface ProfileShellProps {
   children: React.ReactNode
   permissions: string[]
+  initialUser?: { id: string; name: string; email: string; image?: string | null }
 }
 
-export function ProfileShell({ children, permissions }: ProfileShellProps) {
+export function ProfileShell({ children, permissions, initialUser }: ProfileShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
 
@@ -80,7 +81,7 @@ export function ProfileShell({ children, permissions }: ProfileShellProps) {
             </Button>
             <h1 className="text-sm font-semibold text-muted-foreground">My Account</h1>
           </div>
-          <UserMenu />
+          <UserMenu initialUser={initialUser} />
         </header>
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}

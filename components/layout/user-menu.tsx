@@ -14,13 +14,25 @@ import {
 import { getInitials } from "@/lib/utils"
 import { LogOut, User } from "lucide-react"
 
-export function UserMenu() {
+interface InitialUser {
+  id: string
+  name: string
+  email: string
+  image?: string | null
+}
+
+interface UserMenuProps {
+  initialUser?: InitialUser
+}
+
+export function UserMenu({ initialUser }: UserMenuProps = {}) {
   const router = useRouter()
   const { data: session } = useSession()
 
-  if (!session?.user) return null
+  // Prefer live session data once loaded, fall back to server-provided initial data
+  const user = (session?.user as InitialUser | undefined) ?? initialUser
 
-  const user = session.user
+  if (!user) return null
 
   async function handleSignOut() {
     await signOut()

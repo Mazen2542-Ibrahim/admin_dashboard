@@ -9,6 +9,18 @@ export interface User {
   image: string | null
   role: string
   isActive: boolean
+  lastLoginAt?: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface UserSession {
+  id: string
+  userId: string
+  token: string
+  expiresAt: Date
+  ipAddress: string | null
+  userAgent: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -32,4 +44,6 @@ export interface UserListFilters {
   page?: number
   limit?: number
   search?: string
+  role?: string
+  status?: "active" | "inactive"
 }

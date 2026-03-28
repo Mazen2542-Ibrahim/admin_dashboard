@@ -10,6 +10,8 @@ interface UsersTableWrapperProps {
   page: number
   pageSize: number
   search?: string
+  role?: string
+  status?: string
   currentUserId?: string
   roles: { id: string; name: string }[]
 }
@@ -20,23 +22,37 @@ export function UsersTableWrapper({
   page,
   pageSize,
   search,
+  role,
+  status,
   currentUserId,
   roles,
 }: UsersTableWrapperProps) {
   const router = useRouter()
 
-  function handlePageChange(newPage: number) {
+  function buildParams(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
-    params.set("page", String(newPage))
-    if (search) params.set("search", search)
-    router.push(`/admin/users?${params}`)
+    const merged = { search, role, status, ...overrides }
+    if (merged.search) params.set("search", merged.search)
+    if (merged.role) params.set("role", merged.role)
+    if (merged.status) params.set("status", merged.status)
+    params.set("page", overrides.page ?? "1")
+    return params.toString()
+  }
+
+  function handlePageChange(newPage: number) {
+    router.push(`/admin/users?${buildParams({ page: String(newPage) })}`)
   }
 
   function handleSearch(value: string) {
-    const params = new URLSearchParams()
-    params.set("page", "1")
-    if (value) params.set("search", value)
-    router.push(`/admin/users?${params}`)
+    router.push(`/admin/users?${buildParams({ search: value || undefined, page: "1" })}`)
+  }
+
+  function handleRoleChange(value: string) {
+    router.push(`/admin/users?${buildParams({ role: value || undefined, page: "1" })}`)
+  }
+
+  function handleStatusChange(value: string) {
+    router.push(`/admin/users?${buildParams({ status: value || undefined, page: "1" })}`)
   }
 
   return (
@@ -46,10 +62,14 @@ export function UsersTableWrapper({
       page={page}
       pageSize={pageSize}
       search={search}
+      role={role}
+      status={status}
       currentUserId={currentUserId}
       roles={roles}
       onPageChange={handlePageChange}
       onSearch={handleSearch}
+      onRoleChange={handleRoleChange}
+      onStatusChange={handleStatusChange}
     />
   )
 }

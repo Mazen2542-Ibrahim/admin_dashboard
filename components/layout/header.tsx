@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 interface HeaderProps {
   title?: string
   onMenuClick?: () => void
+  initialUser?: { id: string; name: string; email: string; image?: string | null }
 }
 
-export function Header({ title, onMenuClick }: HeaderProps) {
+export function Header({ title, onMenuClick, initialUser }: HeaderProps) {
   return (
     <header className="flex h-16 items-center border-b bg-card px-4 sm:px-6 shrink-0">
       <div className="flex flex-1 items-center gap-3">
@@ -30,7 +31,7 @@ export function Header({ title, onMenuClick }: HeaderProps) {
         )}
       </div>
       <div className="flex items-center gap-4">
-        <UserMenu />
+        <UserMenu initialUser={initialUser} />
       </div>
     </header>
   )

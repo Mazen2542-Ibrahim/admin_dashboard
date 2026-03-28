@@ -10,6 +10,7 @@ import {
   updateUserSchema,
   userIdSchema,
   resetPasswordSchema,
+  sessionIdSchema,
 } from "./schema"
 import {
   createUser,
@@ -17,9 +18,13 @@ import {
   deleteUser,
   hardDeleteUser,
   resetUserPassword,
+  updateLastLoginAt,
+  deleteSessionById,
+  deleteAllSessionsByUserId,
 } from "./service"
-import { getUserByEmail } from "./queries"
+import { getUserByEmail, getUserById, getActiveSessionsByUserId } from "./queries"
 import { logAudit } from "@/modules/audit-logs/service"
+import { auth } from "@/lib/auth"
 
 export async function createUserAction(formData: unknown) {
   try {
@@ -59,6 +64,7 @@ export async function updateUserAction(id: string, formData: unknown) {
 
     await updateUser(id, parsed.data, actor.id, actor.email)
     revalidatePath("/admin/users")
+    revalidatePath(`/admin/users/${id}`)
     return { success: true }
   } catch (err) {
     return { error: { message: (err as Error).message } }
@@ -157,6 +163,7 @@ export async function logSignInAction(): Promise<void> {
       resourceType: "user",
       resourceId: user.id,
     })
+    await updateLastLoginAt(user.id).catch(() => {})
   } catch {
     // Never throw — sign-in must not fail because of audit logging
   }
@@ -261,6 +268,158 @@ export async function resetPasswordAction(formData: unknown) {
       actor.id,
       actor.email
     )
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function getUserSessionsAction(userId: string) {
+  try {
+    await requirePermission("users:read")
+    const idParsed = userIdSchema.safeParse(userId)
+    if (!idParsed.success) return { error: { message: "Invalid user ID" } }
+    const data = await getActiveSessionsByUserId(userId)
+    return { success: true, data }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function revokeUserSessionAction(sessionId: string, userId: string) {
+  try {
+    const session = await requirePermission("users:update")
+    const actor = session.user as { id: string; email: string }
+
+    const sessionIdParsed = sessionIdSchema.safeParse(sessionId)
+    if (!sessionIdParsed.success) return { error: { message: "Invalid session ID" } }
+
+    const idParsed = userIdSchema.safeParse(userId)
+    if (!idParsed.success) return { error: { message: "Invalid user ID" } }
+
+    await deleteSessionById(sessionId, userId)
+    await logAudit({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      action: "user.session_revoked",
+      resourceType: "user",
+      resourceId: userId,
+      metadata: { sessionId },
+    })
+    revalidatePath(`/admin/users/${userId}`)
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function revokeAllUserSessionsAction(userId: string) {
+  try {
+    const session = await requirePermission("users:update")
+    const actor = session.user as { id: string; email: string }
+
+    const idParsed = userIdSchema.safeParse(userId)
+    if (!idParsed.success) return { error: { message: "Invalid user ID" } }
+
+    await deleteAllSessionsByUserId(userId)
+    await logAudit({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      action: "user.sessions_revoked_all",
+      resourceType: "user",
+      resourceId: userId,
+    })
+    revalidatePath(`/admin/users/${userId}`)
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function sendPasswordResetEmailAction(userId: string) {
+  try {
+    const session = await requirePermission("users:update")
+    const actor = session.user as { id: string; email: string }
+
+    const idParsed = userIdSchema.safeParse(userId)
+    if (!idParsed.success) return { error: { message: "Invalid user ID" } }
+
+    const user = await getUserById(userId)
+    if (!user) return { error: { message: "User not found" } }
+
+    const { headers } = await import("next/headers")
+    await auth.api.requestPasswordReset({
+      body: {
+        email: user.email,
+        redirectTo: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/reset-password`,
+      },
+      headers: await headers(),
+    })
+    await logAudit({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      action: "user.password_reset_email_sent",
+      resourceType: "user",
+      resourceId: userId,
+      metadata: { email: user.email },
+    })
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function sendVerificationEmailAdminAction(userId: string) {
+  try {
+    const session = await requirePermission("users:update")
+    const actor = session.user as { id: string; email: string }
+
+    const idParsed = userIdSchema.safeParse(userId)
+    if (!idParsed.success) return { error: { message: "Invalid user ID" } }
+
+    const user = await getUserById(userId)
+    if (!user) return { error: { message: "User not found" } }
+
+    // auth.api.sendVerificationEmail checks session.email === body.email,
+    // which always fails for admin-triggered flows. Create the token directly instead.
+    const { createEmailVerificationToken } = await import("better-auth/api")
+    const secret = process.env.BETTER_AUTH_SECRET
+    if (!secret) throw new Error("BETTER_AUTH_SECRET is not set")
+
+    const token = await createEmailVerificationToken(secret, user.email)
+    const baseURL = process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_APP_URL ?? ""
+    const callbackURL = encodeURIComponent("/")
+    const url = `${baseURL}/api/auth/verify-email?token=${token}&callbackURL=${callbackURL}`
+
+    await sendTemplateEmailByName("email-verification", user.email, {
+      userName: user.name,
+      verificationUrl: url,
+      appName: appConfig.name,
+    })
+    await logAudit({
+      actorId: actor.id,
+      actorEmail: actor.email,
+      action: "user.verification_email_sent_by_admin",
+      resourceType: "user",
+      resourceId: userId,
+      metadata: { email: user.email },
+    })
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function markEmailVerifiedAction(userId: string) {
+  try {
+    const session = await requirePermission("users:update")
+    const actor = session.user as { id: string; email: string }
+
+    const idParsed = userIdSchema.safeParse(userId)
+    if (!idParsed.success) return { error: { message: "Invalid user ID" } }
+
+    await updateUser(userId, { emailVerified: true }, actor.id, actor.email)
+    revalidatePath(`/admin/users/${userId}`)
     return { success: true }
   } catch (err) {
     return { error: { message: (err as Error).message } }

@@ -14,9 +14,12 @@ export const createUserSchema = z.object({
 export const updateUserSchema = z.object({
   name: z.string().min(2).optional(),
   email: z.string().email().optional(),
+  emailVerified: z.boolean().optional(),
   role: z.string().min(1).optional(),
   isActive: z.boolean().optional(),
 })
+
+export const sessionIdSchema = z.string().min(1)
 
 export const userIdSchema = z.string().uuid("Invalid user ID")
 

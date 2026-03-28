@@ -13,8 +13,10 @@ export default async function ProfileLayout({
 
   const permissions = await getUserPermissions(session.user.id)
 
+  const { id, name, email, image } = session.user as { id: string; name: string; email: string; image?: string | null }
+
   return (
-    <ProfileShell permissions={Array.from(permissions)}>
+    <ProfileShell permissions={Array.from(permissions)} initialUser={{ id, name, email, image }}>
       {children}
     </ProfileShell>
   )

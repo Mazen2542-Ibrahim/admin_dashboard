@@ -9,9 +9,10 @@ import { cn } from "@/lib/utils"
 interface AppShellProps {
   children: React.ReactNode
   permissions: string[]
+  initialUser?: { id: string; name: string; email: string; image?: string | null }
 }
 
-export function AppShell({ children, permissions }: AppShellProps) {
+export function AppShell({ children, permissions, initialUser }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
 
@@ -65,7 +66,7 @@ export function AppShell({ children, permissions }: AppShellProps) {
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <Header onMenuClick={() => setSidebarOpen(true)} initialUser={initialUser} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>

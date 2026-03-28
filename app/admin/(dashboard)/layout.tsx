@@ -18,8 +18,10 @@ export default async function DashboardLayout({
     redirect("/profile")
   }
 
+  const { id, name, email, image } = session.user as { id: string; name: string; email: string; image?: string | null }
+
   return (
-    <AppShell permissions={Array.from(permissions)}>
+    <AppShell permissions={Array.from(permissions)} initialUser={{ id, name, email, image }}>
       {children}
     </AppShell>
   )

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { users, accounts } from "@/db/schema"
+import { users, accounts, sessions } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { logAudit } from "@/modules/audit-logs/service"
 import { getUserByEmail } from "./queries"
@@ -132,6 +132,24 @@ export async function hardDeleteUser(
   })
 
   return deleted
+}
+
+export async function updateLastLoginAt(userId: string) {
+  await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, userId))
+}
+
+export async function deleteSessionById(sessionId: string, expectedUserId: string) {
+  const [session] = await db
+    .select()
+    .from(sessions)
+    .where(eq(sessions.id, sessionId))
+    .limit(1)
+  if (!session || session.userId !== expectedUserId) throw new Error("Session not found")
+  await db.delete(sessions).where(eq(sessions.id, sessionId))
+}
+
+export async function deleteAllSessionsByUserId(userId: string) {
+  await db.delete(sessions).where(eq(sessions.userId, userId))
 }
 
 export async function resetUserPassword(

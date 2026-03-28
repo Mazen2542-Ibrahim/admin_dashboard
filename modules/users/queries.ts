@@ -1,18 +1,21 @@
 import { db } from "@/lib/db"
-import { users, accounts } from "@/db/schema"
-import { eq, ilike, or, count, and } from "drizzle-orm"
+import { users, accounts, sessions } from "@/db/schema"
+import { eq, ilike, or, count, and, gt, desc } from "drizzle-orm"
 import type { UserListFilters } from "./types"
 
 export async function getAllUsers(filters: UserListFilters = {}) {
-  const { page = 1, limit = 20, search } = filters
+  const { page = 1, limit = 20, search, role, status } = filters
   const offset = (page - 1) * limit
 
-  const where = search
-    ? or(
-        ilike(users.name, `%${search}%`),
-        ilike(users.email, `%${search}%`)
-      )
-    : undefined
+  const conditions = []
+  if (search) {
+    conditions.push(or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`)))
+  }
+  if (role) conditions.push(eq(users.role, role))
+  if (status === "active") conditions.push(eq(users.isActive, true))
+  if (status === "inactive") conditions.push(eq(users.isActive, false))
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined
 
   return db
     .select({
@@ -23,6 +26,7 @@ export async function getAllUsers(filters: UserListFilters = {}) {
       image: users.image,
       role: users.role,
       isActive: users.isActive,
+      lastLoginAt: users.lastLoginAt,
       createdAt: users.createdAt,
       updatedAt: users.updatedAt,
     })
@@ -50,10 +54,17 @@ export async function getUserByEmail(email: string) {
   return user ?? null
 }
 
-export async function getUserCount(search?: string) {
-  const where = search
-    ? or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`))
-    : undefined
+export async function getUserCount(filters: Pick<UserListFilters, "search" | "role" | "status"> = {}) {
+  const { search, role, status } = filters
+  const conditions = []
+  if (search) {
+    conditions.push(or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`)))
+  }
+  if (role) conditions.push(eq(users.role, role))
+  if (status === "active") conditions.push(eq(users.isActive, true))
+  if (status === "inactive") conditions.push(eq(users.isActive, false))
+
+  const where = conditions.length > 0 ? and(...conditions) : undefined
   const [result] = await db.select({ count: count() }).from(users).where(where)
   return result?.count ?? 0
 }
@@ -73,4 +84,12 @@ export async function getActiveUserCount() {
     .from(users)
     .where(and(eq(users.isActive, true)))
   return result?.count ?? 0
+}
+
+export async function getActiveSessionsByUserId(userId: string) {
+  return db
+    .select()
+    .from(sessions)
+    .where(and(eq(sessions.userId, userId), gt(sessions.expiresAt, new Date())))
+    .orderBy(desc(sessions.createdAt))
 }

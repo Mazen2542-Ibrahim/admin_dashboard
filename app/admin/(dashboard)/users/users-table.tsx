@@ -1,28 +1,21 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import { ColumnDef } from "@tanstack/react-table"
 import { DataTable } from "@/components/data-table/data-table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { ConfirmDialog } from "@/components/modals/confirm-dialog"
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { UserModal } from "./user-modal"
-import { toast } from "@/components/ui/use-toast"
-import {
-  deleteUserAction,
-  hardDeleteUserAction,
-  reactivateUserAction,
-} from "@/modules/users/actions"
 import { formatDate } from "@/lib/utils"
-import { MoreHorizontal, Plus, UserX, UserCheck, Trash2, Pencil } from "lucide-react"
+import { Plus, Eye } from "lucide-react"
 import type { User } from "@/modules/users/types"
 
 interface UsersTableProps {
@@ -31,10 +24,14 @@ interface UsersTableProps {
   page: number
   pageSize: number
   search?: string
+  role?: string
+  status?: string
   currentUserId?: string
   roles: { id: string; name: string }[]
   onPageChange: (page: number) => void
   onSearch?: (value: string) => void
+  onRoleChange?: (value: string) => void
+  onStatusChange?: (value: string) => void
 }
 
 export function UsersTable({
@@ -43,77 +40,15 @@ export function UsersTable({
   page,
   pageSize,
   search,
-  currentUserId,
+  role,
+  status,
   roles,
   onPageChange,
   onSearch,
+  onRoleChange,
+  onStatusChange,
 }: UsersTableProps) {
   const [createOpen, setCreateOpen] = React.useState(false)
-  const [editUser, setEditUser] = React.useState<User | null>(null)
-  const [deactivateId, setDeactivateId] = React.useState<string | null>(null)
-  const [reactivateId, setReactivateId] = React.useState<string | null>(null)
-  const [deleteId, setDeleteId] = React.useState<string | null>(null)
-  const [isLoading, setIsLoading] = React.useState(false)
-
-  async function handleDeactivate() {
-    if (!deactivateId) return
-    setIsLoading(true)
-    const result = await deleteUserAction(deactivateId)
-    setIsLoading(false)
-    if ("error" in result && result.error) {
-      toast({
-        title: "Error",
-        description:
-          typeof result.error === "object" && "message" in result.error
-            ? result.error.message
-            : "Failed to deactivate user",
-        variant: "destructive",
-      })
-    } else {
-      toast({ title: "User deactivated" })
-    }
-    setDeactivateId(null)
-  }
-
-  async function handleReactivate() {
-    if (!reactivateId) return
-    setIsLoading(true)
-    const result = await reactivateUserAction(reactivateId)
-    setIsLoading(false)
-    if ("error" in result && result.error) {
-      toast({
-        title: "Error",
-        description:
-          typeof result.error === "object" && "message" in result.error
-            ? result.error.message
-            : "Failed to reactivate user",
-        variant: "destructive",
-      })
-    } else {
-      toast({ title: "User reactivated" })
-    }
-    setReactivateId(null)
-  }
-
-  async function handleDelete() {
-    if (!deleteId) return
-    setIsLoading(true)
-    const result = await hardDeleteUserAction(deleteId)
-    setIsLoading(false)
-    if ("error" in result && result.error) {
-      toast({
-        title: "Error",
-        description:
-          typeof result.error === "object" && "message" in result.error
-            ? result.error.message
-            : "Failed to delete user",
-        variant: "destructive",
-      })
-    } else {
-      toast({ title: "User deleted" })
-    }
-    setDeleteId(null)
-  }
 
   const columns: ColumnDef<User>[] = [
     {
@@ -130,18 +65,14 @@ export function UsersTable({
       accessorKey: "role",
       header: "Role",
       cell: ({ row }) => {
-        const role = row.original.role
+        const r = row.original.role
         return (
           <Badge
             variant={
-              role === "super_admin"
-                ? "default"
-                : role === "admin"
-                ? "secondary"
-                : "outline"
+              r === "super_admin" ? "default" : r === "admin" ? "secondary" : "outline"
             }
           >
-            {role.replace("_", " ")}
+            {r.replace(/_/g, " ")}
           </Badge>
         )
       },
@@ -156,60 +87,24 @@ export function UsersTable({
       ),
     },
     {
-      accessorKey: "createdAt",
-      header: "Created",
+      accessorKey: "lastLoginAt",
+      header: "Last Login",
       cell: ({ row }) => (
         <span className="text-sm text-muted-foreground">
-          {formatDate(row.original.createdAt)}
+          {formatDate(row.original.lastLoginAt) ?? "—"}
         </span>
       ),
     },
     {
       id: "actions",
-      cell: ({ row }) => {
-        const user = row.original
-        return (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <MoreHorizontal className="h-4 w-4" />
-                <span className="sr-only">Open menu</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>Actions</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setEditUser(user)}>
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit
-              </DropdownMenuItem>
-              {user.isActive ? (
-                <DropdownMenuItem
-                  onClick={() => setDeactivateId(user.id)}
-                  disabled={currentUserId === user.id}
-                >
-                  <UserX className="mr-2 h-4 w-4" />
-                  Deactivate
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem onClick={() => setReactivateId(user.id)}>
-                  <UserCheck className="mr-2 h-4 w-4" />
-                  Reactivate
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={() => setDeleteId(user.id)}
-                disabled={currentUserId === user.id}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )
-      },
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`/admin/users/${row.original.id}`}>
+            <Eye className="mr-2 h-4 w-4" />
+            View
+          </Link>
+        </Button>
+      ),
     },
   ]
 
@@ -224,53 +119,43 @@ export function UsersTable({
         onSearch={onSearch}
         pagination={{ page, pageSize, total, onPageChange }}
         toolbar={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            New User
-          </Button>
+          <div className="flex items-center gap-2">
+            <Select value={role ?? ""} onValueChange={(v) => onRoleChange?.(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue placeholder="All roles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All roles</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+                <SelectItem value="user">User</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={status ?? ""} onValueChange={(v) => onStatusChange?.(v === "all" ? "" : v)}>
+              <SelectTrigger className="w-[130px] h-9">
+                <SelectValue placeholder="All status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All status</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="inactive">Inactive</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              New User
+            </Button>
+          </div>
         }
       />
 
       <UserModal
-        open={createOpen || editUser !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateOpen(false)
-            setEditUser(null)
-          }
-        }}
-        user={editUser}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        user={null}
         roles={roles}
-      />
-
-      <ConfirmDialog
-        open={deactivateId !== null}
-        onOpenChange={(open) => !open && setDeactivateId(null)}
-        title="Deactivate User"
-        description="This will prevent the user from logging in. You can reactivate them later."
-        confirmLabel="Deactivate"
-        onConfirm={handleDeactivate}
-        isLoading={isLoading}
-      />
-
-      <ConfirmDialog
-        open={reactivateId !== null}
-        onOpenChange={(open) => !open && setReactivateId(null)}
-        title="Reactivate User"
-        description="This will allow the user to log in again."
-        confirmLabel="Reactivate"
-        onConfirm={handleReactivate}
-        isLoading={isLoading}
-      />
-
-      <ConfirmDialog
-        open={deleteId !== null}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Delete User"
-        description="This will permanently delete the user and all their data. This action cannot be undone."
-        confirmLabel="Delete Permanently"
-        onConfirm={handleDelete}
-        isLoading={isLoading}
       />
     </>
   )
