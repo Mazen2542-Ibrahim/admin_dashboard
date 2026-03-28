@@ -54,6 +54,7 @@ export function SettingsForm({ settings, smtpConfigured }: SettingsFormProps) {
     emailVerificationEnabled: settings.emailVerificationEnabled,
     registrationEnabled: settings.registrationEnabled,
     emailOtpEnabled: settings.emailOtpEnabled,
+    auditLogRetentionDays: settings.auditLogRetentionDays,
   })
   const [saving, setSaving] = React.useState(false)
 

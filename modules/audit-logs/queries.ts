@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { auditLogs } from "@/db/schema"
-import { eq, and, gte, lte, desc, count } from "drizzle-orm"
+import { eq, and, gte, lte, desc, count, lt } from "drizzle-orm"
 import type { AuditLogFilters } from "./types"
 
 function buildWhereClause(filters: AuditLogFilters) {
@@ -43,4 +43,12 @@ export async function getAuditLogCount(filters: AuditLogFilters = {}) {
     .from(auditLogs)
     .where(where)
   return result?.count ?? 0
+}
+
+export async function deleteAuditLogsOlderThan(cutoff: Date): Promise<number> {
+  const deleted = await db
+    .delete(auditLogs)
+    .where(lt(auditLogs.createdAt, cutoff))
+    .returning({ id: auditLogs.id })
+  return deleted.length
 }

@@ -18,12 +18,14 @@ export async function upsertAppSettings(
         emailVerificationEnabled: data.emailVerificationEnabled,
         registrationEnabled: data.registrationEnabled,
         emailOtpEnabled: data.emailOtpEnabled,
+        auditLogRetentionDays: data.auditLogRetentionDays,
       })
   } else {
     await db.insert(appSettings).values({
       emailVerificationEnabled: data.emailVerificationEnabled,
       registrationEnabled: data.registrationEnabled,
       emailOtpEnabled: data.emailOtpEnabled,
+      auditLogRetentionDays: data.auditLogRetentionDays,
     })
   }
 

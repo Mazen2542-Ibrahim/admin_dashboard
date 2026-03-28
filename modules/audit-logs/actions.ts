@@ -1,8 +1,37 @@
 "use server"
 
 import { requirePermission } from "@/lib/auth"
+import { revalidatePath } from "next/cache"
 import { auditLogFilterSchema } from "./schema"
 import { getAuditLogs, getAuditLogCount } from "./queries"
+import { purgeAuditLogs } from "./service"
+
+export async function purgeAuditLogsAction() {
+  try {
+    const session = await requirePermission("settings:update")
+    const actor = session.user as { id: string; email: string }
+
+    const { getAppSettings } = await import("@/modules/settings/queries")
+    const settings = await getAppSettings()
+
+    if (!settings?.auditLogRetentionDays) {
+      return { error: { message: "No retention period configured. Set a retention period before purging." } }
+    }
+
+    const { deletedCount, cutoffDate } = await purgeAuditLogs(
+      settings.auditLogRetentionDays,
+      actor.id,
+      actor.email
+    )
+
+    revalidatePath("/admin/audit-logs")
+    revalidatePath("/admin/settings")
+
+    return { success: true, deletedCount, cutoffDate }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
 
 export async function getAuditLogsAction(filters: unknown) {
   try {

@@ -1,0 +1,1 @@
+ALTER TABLE "app_settings" ADD COLUMN "audit_log_retention_days" integer;

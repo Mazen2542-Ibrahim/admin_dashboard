@@ -1,6 +1,7 @@
 import { getAppSettings } from "@/modules/settings/queries"
 import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { SettingsForm } from "@/components/settings/settings-form"
+import { AuditLogRetentionPanel } from "@/components/settings/audit-log-retention-panel"
 import {
   Card,
   CardContent,
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
     emailVerificationEnabled: false,
     registrationEnabled: true,
     emailOtpEnabled: false,
+    auditLogRetentionDays: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -60,6 +62,18 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <SettingsForm settings={defaultSettings} smtpConfigured={smtpConfigured} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Audit Log Retention</CardTitle>
+          <CardDescription>
+            Configure how long audit logs are kept and manually purge expired entries.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AuditLogRetentionPanel settings={defaultSettings} />
         </CardContent>
       </Card>
     </div>
