@@ -25,7 +25,7 @@ import {
 } from "./service"
 import { getUserByEmail, getUserById, getActiveSessionsByUserId, getCredentialAccount } from "./queries"
 import { db } from "@/lib/db"
-import { verifications } from "@/db/schema"
+import { verifications, users } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { logAudit } from "@/modules/audit-logs/service"
 import { auth } from "@/lib/auth"
@@ -155,7 +155,9 @@ export async function updateProfileAction(formData: unknown) {
 }
 
 /** Called client-side after a successful sign-in to write an audit entry */
-export async function logSignInAction(): Promise<void> {
+export async function logSignInAction(
+  location?: { country?: string; latitude?: number; longitude?: number }
+): Promise<void> {
   try {
     const session = await getSession()
     if (!session?.user) return
@@ -166,8 +168,20 @@ export async function logSignInAction(): Promise<void> {
       action: "user.signed_in",
       resourceType: "user",
       resourceId: user.id,
+      metadata: location ? { country: location.country, latitude: location.latitude, longitude: location.longitude } : undefined,
     })
     await updateLastLoginAt(user.id).catch(() => {})
+    if (location?.country || location?.latitude != null) {
+      await db
+        .update(users)
+        .set({
+          lastLoginCountry: location.country ?? null,
+          lastLoginLatitude: location.latitude ?? null,
+          lastLoginLongitude: location.longitude ?? null,
+        })
+        .where(eq(users.id, user.id))
+        .catch(() => {})
+    }
   } catch {
     // Never throw — sign-in must not fail because of audit logging
   }

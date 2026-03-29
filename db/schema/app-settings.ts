@@ -1,4 +1,4 @@
-import { pgTable, uuid, boolean, timestamp, integer } from "drizzle-orm/pg-core"
+import { pgTable, uuid, boolean, timestamp, integer, text } from "drizzle-orm/pg-core"
 
 export const appSettings = pgTable("app_settings", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -9,6 +9,8 @@ export const appSettings = pgTable("app_settings", {
   lockoutEnabled: boolean("lockout_enabled").notNull().default(false),
   maxFailedAttempts: integer("max_failed_attempts").notNull().default(5),
   lockoutDurationMinutes: integer("lockout_duration_minutes").notNull().default(60),
+  requireLocationForAuth: boolean("require_location_for_auth").notNull().default(false),
+  allowedCountries: text("allowed_countries").array().notNull().default([]),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()

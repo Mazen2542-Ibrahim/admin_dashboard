@@ -27,7 +27,18 @@ const otpSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>
 type OtpFormValues = z.infer<typeof otpSchema>
 
-export function LoginForm() {
+interface LocationConfig {
+  requireLocationForAuth: boolean
+  allowedCountries: string[]
+}
+
+interface LoginFormProps {
+  locationConfig: LocationConfig
+}
+
+type GeoState = "idle" | "requesting" | "approved" | "blocked"
+
+export function LoginForm({ locationConfig }: LoginFormProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") ?? "/admin/dashboard"
@@ -35,6 +46,8 @@ export function LoginForm() {
   const [step, setStep] = React.useState<"credentials" | "otp">("credentials")
   const [emailForOtp, setEmailForOtp] = React.useState("")
   const [unverifiedEmail, setUnverifiedEmail] = React.useState("")
+  const [geoState, setGeoState] = React.useState<GeoState>("idle")
+  const [detectedCountry, setDetectedCountry] = React.useState<string | null>(null)
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -46,8 +59,56 @@ export function LoginForm() {
     defaultValues: { otp: "" },
   })
 
+  async function checkLocation(): Promise<boolean> {
+    if (!locationConfig.requireLocationForAuth) return true
+    if (geoState === "approved") return true
+
+    setGeoState("requesting")
+
+    // Try to get GPS coords, but treat all failures as non-blocking.
+    // The server-side IP check is the authoritative gate; GPS only adds accuracy.
+    let coords: { latitude: number; longitude: number } | undefined
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 8000,
+            maximumAge: 300000,
+            enableHighAccuracy: false,
+          })
+        })
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+      } catch {
+        // GPS unavailable, denied, or timed out — fall back to IP-only check
+      }
+    }
+
+    try {
+      const res = await fetch("/api/auth/location-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(coords ?? {}),
+      })
+      const data = (await res.json()) as { allowed: boolean; country?: string }
+      setDetectedCountry(data.country ?? null)
+      if (data.allowed) {
+        setGeoState("approved")
+        return true
+      }
+      setGeoState("blocked")
+      return false
+    } catch {
+      // Network error — don't block the user
+      setGeoState("approved")
+      return true
+    }
+  }
+
   async function onLoginSubmit(values: LoginFormValues) {
     setUnverifiedEmail("")
+
+    const locationOk = await checkLocation()
+    if (!locationOk) return
 
     const res = await fetch("/api/auth/sign-in/email", {
       method: "POST",
@@ -105,7 +166,7 @@ export function LoginForm() {
     }
 
     // Successful sign-in
-    logSignInAction().catch(() => {})
+    logSignInAction(detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }
@@ -141,7 +202,7 @@ export function LoginForm() {
       return
     }
 
-    logSignInAction().catch(() => {})
+    logSignInAction(detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }
@@ -216,6 +277,22 @@ export function LoginForm() {
         </div>
       )}
 
+      {geoState === "blocked" && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <p className="font-medium">Access restricted</p>
+          <p className="mt-1">Access from your country is not allowed.</p>
+        </div>
+      )}
+
+      {geoState === "requesting" && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <p className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verifying your location…
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input
@@ -258,9 +335,9 @@ export function LoginForm() {
       <Button
         type="submit"
         className="w-full"
-        disabled={loginForm.formState.isSubmitting}
+        disabled={loginForm.formState.isSubmitting || geoState === "requesting"}
       >
-        {loginForm.formState.isSubmitting && (
+        {(loginForm.formState.isSubmitting || geoState === "requesting") && (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         )}
         Sign In

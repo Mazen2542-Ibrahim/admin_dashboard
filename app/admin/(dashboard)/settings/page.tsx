@@ -3,6 +3,7 @@ import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { SettingsForm } from "@/components/settings/settings-form"
 import { AuditLogRetentionPanel } from "@/components/settings/audit-log-retention-panel"
 import { AccountSecurityPanel } from "@/components/settings/account-security-panel"
+import { LocationRestrictionsPanel } from "@/components/settings/location-restrictions-panel"
 import {
   Card,
   CardContent,
@@ -31,6 +32,8 @@ export default async function SettingsPage() {
     lockoutEnabled: false,
     maxFailedAttempts: 5,
     lockoutDurationMinutes: 60,
+    requireLocationForAuth: false,
+    allowedCountries: [] as string[],
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -90,6 +93,18 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <AccountSecurityPanel settings={defaultSettings} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Location Restrictions</CardTitle>
+          <CardDescription>
+            Restrict authentication to users in specific geographic locations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LocationRestrictionsPanel settings={defaultSettings} />
         </CardContent>
       </Card>
     </div>

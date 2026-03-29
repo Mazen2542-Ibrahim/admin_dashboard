@@ -7,6 +7,8 @@ export type AppSettings = {
   lockoutEnabled: boolean
   maxFailedAttempts: number
   lockoutDurationMinutes: number
+  requireLocationForAuth: boolean
+  allowedCountries: string[]
   createdAt: Date
   updatedAt: Date
 }
@@ -19,4 +21,9 @@ export type UpdateSettingsInput = {
   lockoutEnabled: boolean
   maxFailedAttempts: number
   lockoutDurationMinutes: number
+}
+
+export type UpdateLocationSettingsInput = {
+  requireLocationForAuth: boolean
+  allowedCountries: string[]
 }

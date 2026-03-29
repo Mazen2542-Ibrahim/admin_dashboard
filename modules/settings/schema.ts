@@ -11,3 +11,10 @@ export const updateSettingsSchema = z.object({
 })
 
 export type UpdateSettingsSchema = z.infer<typeof updateSettingsSchema>
+
+export const updateLocationSettingsSchema = z.object({
+  requireLocationForAuth: z.boolean(),
+  allowedCountries: z.array(z.string().length(2)).default([]),
+})
+
+export type UpdateLocationSettingsSchema = z.infer<typeof updateLocationSettingsSchema>

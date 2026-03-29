@@ -9,10 +9,17 @@ import {
 import { RegisterForm } from "./register-form"
 import { appConfig } from "@/config/app.config"
 import { features } from "@/config/features.config"
+import { getAppSettings } from "@/modules/settings/queries"
 
-export default function RegisterPage() {
+export default async function RegisterPage() {
   if (!features.registration) {
     redirect("/login")
+  }
+
+  const settings = await getAppSettings()
+  const locationConfig = {
+    requireLocationForAuth: settings?.requireLocationForAuth ?? false,
+    allowedCountries: settings?.allowedCountries ?? [],
   }
 
   return (
@@ -33,7 +40,7 @@ export default function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RegisterForm />
+            <RegisterForm locationConfig={locationConfig} />
           </CardContent>
         </Card>
       </div>

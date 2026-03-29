@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import { appSettings } from "@/db/schema"
 import { logAudit } from "@/modules/audit-logs/service"
 import { getAppSettings } from "./queries"
-import type { UpdateSettingsInput } from "./types"
+import type { UpdateSettingsInput, UpdateLocationSettingsInput } from "./types"
 
 export async function upsertAppSettings(
   data: UpdateSettingsInput,
@@ -41,5 +41,35 @@ export async function upsertAppSettings(
     action: "settings.updated",
     resourceType: "settings",
     metadata: data,
+  })
+}
+
+export async function upsertLocationSettings(
+  data: UpdateLocationSettingsInput,
+  actorId?: string,
+  actorEmail?: string
+): Promise<void> {
+  const existing = await getAppSettings()
+
+  if (existing) {
+    await db
+      .update(appSettings)
+      .set({
+        requireLocationForAuth: data.requireLocationForAuth,
+        allowedCountries: data.allowedCountries,
+      })
+  } else {
+    await db.insert(appSettings).values({
+      requireLocationForAuth: data.requireLocationForAuth,
+      allowedCountries: data.allowedCountries,
+    })
+  }
+
+  await logAudit({
+    actorId,
+    actorEmail,
+    action: "settings.location_updated",
+    resourceType: "settings",
+    metadata: data as unknown as Record<string, unknown>,
   })
 }

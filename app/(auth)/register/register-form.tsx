@@ -33,15 +33,74 @@ const registerSchema = z
 
 type RegisterFormValues = z.infer<typeof registerSchema>
 
-export function RegisterForm() {
+interface LocationConfig {
+  requireLocationForAuth: boolean
+  allowedCountries: string[]
+}
+
+interface RegisterFormProps {
+  locationConfig: LocationConfig
+}
+
+type GeoState = "idle" | "requesting" | "approved" | "blocked"
+
+export function RegisterForm({ locationConfig }: RegisterFormProps) {
   const router = useRouter()
+  const [geoState, setGeoState] = React.useState<GeoState>("idle")
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
   })
 
+  async function checkLocation(): Promise<boolean> {
+    if (!locationConfig.requireLocationForAuth) return true
+    if (geoState === "approved") return true
+
+    setGeoState("requesting")
+
+    // Try to get GPS coords, but treat all failures as non-blocking.
+    // The server-side IP check is the authoritative gate; GPS only adds accuracy.
+    let coords: { latitude: number; longitude: number } | undefined
+    if (typeof navigator !== "undefined" && navigator.geolocation) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 8000,
+            maximumAge: 300000,
+            enableHighAccuracy: false,
+          })
+        })
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+      } catch {
+        // GPS unavailable, denied, or timed out — fall back to IP-only check
+      }
+    }
+
+    try {
+      const res = await fetch("/api/auth/location-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(coords ?? {}),
+      })
+      const data = (await res.json()) as { allowed: boolean }
+      if (data.allowed) {
+        setGeoState("approved")
+        return true
+      }
+      setGeoState("blocked")
+      return false
+    } catch {
+      // Network error — don't block the user
+      setGeoState("approved")
+      return true
+    }
+  }
+
   async function onSubmit(values: RegisterFormValues) {
+    const locationOk = await checkLocation()
+    if (!locationOk) return
+
     const result = await signUp.email({
       name: values.name,
       email: values.email,
@@ -66,6 +125,22 @@ export function RegisterForm() {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      {geoState === "blocked" && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <p className="font-medium">Access restricted</p>
+          <p className="mt-1">Access from your country is not allowed.</p>
+        </div>
+      )}
+
+      {geoState === "requesting" && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          <p className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Verifying your location…
+          </p>
+        </div>
+      )}
+
       <div className="space-y-2">
         <Label htmlFor="name">Name</Label>
         <Input
@@ -130,9 +205,9 @@ export function RegisterForm() {
       <Button
         type="submit"
         className="w-full"
-        disabled={form.formState.isSubmitting}
+        disabled={form.formState.isSubmitting || geoState === "requesting"}
       >
-        {form.formState.isSubmitting && (
+        {(form.formState.isSubmitting || geoState === "requesting") && (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         )}
         Create Account

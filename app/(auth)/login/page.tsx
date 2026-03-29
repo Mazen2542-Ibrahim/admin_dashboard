@@ -8,8 +8,15 @@ import {
 } from "@/components/ui/card"
 import { LoginForm } from "./login-form"
 import { appConfig } from "@/config/app.config"
+import { getAppSettings } from "@/modules/settings/queries"
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const settings = await getAppSettings()
+  const locationConfig = {
+    requireLocationForAuth: settings?.requireLocationForAuth ?? false,
+    allowedCountries: settings?.allowedCountries ?? [],
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <div className="w-full max-w-sm">
@@ -29,7 +36,7 @@ export default function LoginPage() {
           </CardHeader>
           <CardContent>
             <Suspense>
-              <LoginForm />
+              <LoginForm locationConfig={locationConfig} />
             </Suspense>
           </CardContent>
         </Card>
