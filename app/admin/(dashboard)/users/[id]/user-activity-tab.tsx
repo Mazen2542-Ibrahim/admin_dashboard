@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Loader2 } from "lucide-react"
+import { Loader2, ChevronLeft, ChevronRight } from "lucide-react"
 import { formatDateTime, truncate } from "@/lib/utils"
 import { getAuditLogsAction } from "@/modules/audit-logs/actions"
 
@@ -99,19 +99,19 @@ export function UserActivityTab({ userId }: UserActivityTabProps) {
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => p - 1)}
                 >
-                  Previous
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => p + 1)}
                 >
-                  Next
+                  <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
