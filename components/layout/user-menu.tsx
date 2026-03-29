@@ -35,13 +35,12 @@ export function UserMenu({ initialUser }: UserMenuProps = {}) {
   if (!user) return null
 
   async function handleSignOut() {
-    await signOut()
-    router.push("/login")
-    router.refresh()
+    signOut().catch(() => {})
+    window.location.href = "/login"
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-2 rounded-md p-1 hover:bg-accent transition-colors">
           <Avatar className="h-8 w-8">
@@ -62,11 +61,11 @@ export function UserMenu({ initialUser }: UserMenuProps = {}) {
           <p className="text-xs text-muted-foreground font-normal">{user.email}</p>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="cursor-pointer" onClick={() => router.push("/profile")}>
+        <DropdownMenuItem className="cursor-pointer" onSelect={() => router.push("/profile")}>
           <User className="mr-2 h-4 w-4" />
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" onClick={handleSignOut}>
+        <DropdownMenuItem className="cursor-pointer" onSelect={handleSignOut}>
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
         </DropdownMenuItem>
