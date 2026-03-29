@@ -496,6 +496,8 @@ function AppearanceSection({ themePreference }: { themePreference: string }) {
   function handleThemeChange(value: string) {
     const safe = value as "light" | "dark" | "system"
     setTheme(safe)
+    // Keep sessionStorage in sync so ThemeSync doesn't re-override on next navigation
+    sessionStorage.setItem("theme-synced", "1")
     updateThemeAction(safe).catch(() => {})
   }
 
