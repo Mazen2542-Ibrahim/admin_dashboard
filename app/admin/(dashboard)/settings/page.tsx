@@ -48,7 +48,7 @@ export default async function SettingsPage() {
       </div>
 
       {!smtpConfigured && (
-        <Alert variant="destructive" className="border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-600">
+        <Alert variant="warning">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             <strong>SMTP not configured.</strong> Email-dependent features (verification and OTP) are disabled.{" "}

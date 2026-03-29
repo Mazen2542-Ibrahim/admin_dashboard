@@ -37,7 +37,7 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
     <div className="mx-auto max-w-3xl space-y-6">
       <Breadcrumb items={[
         { label: "Users", href: "/admin/users" },
-        { label: user.name ?? user.email },
+        { label: user.name ?? user.email.split("@")[0] },
       ]} />
 
       {/* Hero card */}

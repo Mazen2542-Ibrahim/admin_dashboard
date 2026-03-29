@@ -1,10 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { usePathname } from "next/navigation"
 import { Sidebar } from "./sidebar"
 import { Header } from "./header"
 import { cn } from "@/lib/utils"
+
+const ROUTE_TITLES: Record<string, string> = {
+  "/admin/dashboard": "Dashboard",
+  "/admin/users": "Users",
+  "/admin/roles": "Roles & Permissions",
+  "/admin/smtp": "SMTP Settings",
+  "/admin/email-templates": "Email Templates",
+  "/admin/audit-logs": "Audit Logs",
+  "/admin/settings": "Settings",
+}
+
+function getPageTitle(pathname: string): string {
+  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname]
+  for (const [route, title] of Object.entries(ROUTE_TITLES)) {
+    if (pathname.startsWith(route + "/")) return title
+  }
+  return ""
+}
 
 interface AppShellProps {
   children: React.ReactNode
@@ -15,20 +33,30 @@ interface AppShellProps {
 export function AppShell({ children, permissions, initialUser }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
 
   // Close sidebar on route change
   useEffect(() => {
     setSidebarOpen(false)
   }, [pathname])
 
-  // Prevent body scroll when mobile sidebar is open
+  // Prevent body scroll + handle Escape when mobile sidebar is open
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = "hidden"
+      closeButtonRef.current?.focus()
     } else {
       document.body.style.overflow = ""
     }
     return () => { document.body.style.overflow = "" }
+  }, [sidebarOpen])
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && sidebarOpen) setSidebarOpen(false)
+    }
+    document.addEventListener("keydown", handleKeyDown)
+    return () => document.removeEventListener("keydown", handleKeyDown)
   }, [sidebarOpen])
 
   return (
@@ -60,13 +88,13 @@ export function AppShell({ children, permissions, initialUser }: AppShellProps) 
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <Sidebar permissions={permissions} onClose={() => setSidebarOpen(false)} />
+          <Sidebar permissions={permissions} onClose={() => setSidebarOpen(false)} closeButtonRef={closeButtonRef} />
         </div>
       </div>
 
       {/* Main content */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        <Header onMenuClick={() => setSidebarOpen(true)} initialUser={initialUser} />
+        <Header onMenuClick={() => setSidebarOpen(true)} initialUser={initialUser} title={getPageTitle(pathname)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6">
           {children}
         </main>

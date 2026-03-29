@@ -20,13 +20,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { AuditLogFilters } from "./audit-log-filters"
 import { formatDateTime, truncate } from "@/lib/utils"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface AuditLogsPageProps {
   searchParams: {
     page?: string
-    action?: string
+    actorEmail?: string
     resourceType?: string
   }
 }
@@ -41,7 +42,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
   const filters = {
     page,
     limit: pageSize,
-    action: searchParams.action,
+    actorEmail: searchParams.actorEmail,
     resourceType: searchParams.resourceType,
   }
 
@@ -61,8 +62,17 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
 
       <Card>
         <CardHeader>
-          <CardTitle>Activity Log</CardTitle>
-          <CardDescription>{total} total events</CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle>Activity Log</CardTitle>
+              <CardDescription>{total} total events</CardDescription>
+            </div>
+            <AuditLogFilters
+              actorEmail={searchParams.actorEmail}
+              resourceType={searchParams.resourceType}
+              page={page}
+            />
+          </div>
         </CardHeader>
         <CardContent>
 
@@ -130,7 +140,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                 </Button>
               ) : (
                 <Button variant="outline" size="icon" asChild>
-                  <Link href={`/admin/audit-logs?page=${page - 1}${searchParams.action ? `&action=${searchParams.action}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                  <Link href={`/admin/audit-logs?page=${page - 1}${searchParams.actorEmail ? `&actorEmail=${encodeURIComponent(searchParams.actorEmail)}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
                     <ChevronLeft className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -141,7 +151,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                 </Button>
               ) : (
                 <Button variant="outline" size="icon" asChild>
-                  <Link href={`/admin/audit-logs?page=${page + 1}${searchParams.action ? `&action=${searchParams.action}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                  <Link href={`/admin/audit-logs?page=${page + 1}${searchParams.actorEmail ? `&actorEmail=${encodeURIComponent(searchParams.actorEmail)}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </Button>

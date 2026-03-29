@@ -20,6 +20,7 @@ import {
   updateThemeAction,
 } from "@/modules/users/actions"
 import { changePassword } from "@/lib/auth-client"
+import { PasswordInput } from "@/components/forms/password-input"
 import { useTheme } from "next-themes"
 import {
   DropdownMenu,
@@ -58,11 +59,11 @@ export function ProfileTabs({
         {/* Tab bar — scrollable on very small screens */}
         <div className="border-b px-4 sm:px-6 pt-1 overflow-x-auto">
           <TabsList className="h-auto bg-transparent p-0 gap-0 min-w-max">
-            {(["general", "security", "email"] as const).map((tab) => (
+            {(["General", "Security", "Email"] as const).map((tab) => (
               <TabsTrigger
                 key={tab}
-                value={tab}
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 sm:px-4 pb-3 pt-2 text-sm font-medium capitalize"
+                value={tab.toLowerCase()}
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-3 sm:px-4 pb-3 pt-2 text-sm font-medium"
               >
                 {tab}
               </TabsTrigger>
@@ -292,9 +293,8 @@ function ChangePasswordSection() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
         <div className="space-y-1">
           <Label htmlFor="currentPassword">Current Password</Label>
-          <Input
+          <PasswordInput
             id="currentPassword"
-            type="password"
             autoComplete="current-password"
             {...form.register("currentPassword")}
           />
@@ -304,9 +304,8 @@ function ChangePasswordSection() {
         </div>
         <div className="space-y-1">
           <Label htmlFor="newPassword">New Password</Label>
-          <Input
+          <PasswordInput
             id="newPassword"
-            type="password"
             autoComplete="new-password"
             {...form.register("newPassword")}
           />
@@ -316,9 +315,8 @@ function ChangePasswordSection() {
         </div>
         <div className="space-y-1">
           <Label htmlFor="confirmPassword">Confirm New Password</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
-            type="password"
             autoComplete="new-password"
             {...form.register("confirmPassword")}
           />

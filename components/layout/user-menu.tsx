@@ -42,7 +42,7 @@ export function UserMenu({ initialUser }: UserMenuProps = {}) {
   return (
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-2 rounded-md p-1 hover:bg-accent transition-colors">
+        <button className="flex items-center gap-2 rounded-md p-1 hover:bg-accent transition-colors" aria-label={`User menu — ${user.name}`}>
           <Avatar className="h-8 w-8">
             {user.image && <AvatarImage src={user.image} alt={user.name ?? ""} />}
             <AvatarFallback className="text-xs">

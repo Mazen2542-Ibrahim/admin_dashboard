@@ -41,7 +41,9 @@
       "Bash(/Users/mogh/.bun/bin/bun db:generate 2>&1)",
       "Bash(/Users/mogh/.bun/bin/bun db:migrate 2>&1)",
       "Bash(grep -r \"forgetPassword\\\\|forget-password\\\\|requestPasswordReset\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/*.js)",
-      "Bash(grep -o \"\"[a-zA-Z]*[Pp]assword[a-zA-Z]*\"\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/auth/full.d.mts)"
+      "Bash(grep -o \"\"[a-zA-Z]*[Pp]assword[a-zA-Z]*\"\" /Users/mogh/Developer/admin_dashboard/node_modules/better-auth/dist/auth/full.d.mts)",
+      "Bash(find:*)",
+      "Bash(cat:*)"
     ]
   }
 }

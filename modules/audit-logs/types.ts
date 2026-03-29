@@ -26,6 +26,7 @@ export interface AuditLogFilters {
   action?: string
   resourceType?: string
   actorId?: string
+  actorEmail?: string
   dateFrom?: Date
   dateTo?: Date
   page?: number

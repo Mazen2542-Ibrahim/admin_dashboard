@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { auditLogs } from "@/db/schema"
-import { eq, and, gte, lte, desc, count, lt } from "drizzle-orm"
+import { eq, and, gte, lte, desc, count, lt, ilike } from "drizzle-orm"
 import type { AuditLogFilters } from "./types"
 
 function buildWhereClause(filters: AuditLogFilters) {
@@ -8,6 +8,7 @@ function buildWhereClause(filters: AuditLogFilters) {
   if (filters.action) conditions.push(eq(auditLogs.action, filters.action))
   if (filters.resourceType) conditions.push(eq(auditLogs.resourceType, filters.resourceType))
   if (filters.actorId) conditions.push(eq(auditLogs.actorId, filters.actorId))
+  if (filters.actorEmail) conditions.push(ilike(auditLogs.actorEmail, `%${filters.actorEmail}%`))
   if (filters.dateFrom) conditions.push(gte(auditLogs.createdAt, filters.dateFrom))
   if (filters.dateTo) conditions.push(lte(auditLogs.createdAt, filters.dateTo))
   return conditions.length > 0 ? and(...conditions) : undefined

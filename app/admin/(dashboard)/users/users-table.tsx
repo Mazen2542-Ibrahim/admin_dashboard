@@ -126,9 +126,11 @@ export function UsersTable({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All roles</SelectItem>
-                <SelectItem value="super_admin">Super Admin</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-                <SelectItem value="user">User</SelectItem>
+                {roles.map((r) => (
+                  <SelectItem key={r.id} value={r.name}>
+                    {r.name.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 

@@ -1,6 +1,6 @@
 import { getUserCount, getActiveUserCount } from "@/modules/users/queries"
 import { getTemplateCount } from "@/modules/email-templates/queries"
-import { getAuditLogs } from "@/modules/audit-logs/queries"
+import { getAuditLogs, getAuditLogCount } from "@/modules/audit-logs/queries"
 import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { SmtpStatusBanner } from "@/components/dashboard/smtp-status-banner"
 import {
@@ -23,11 +23,12 @@ import { Users, UserCheck, FileText, ScrollText } from "lucide-react"
 import { formatDateTime } from "@/lib/utils"
 
 export default async function DashboardPage() {
-  const [totalUsers, activeUsers, templateCount, recentLogs, smtpSettings] =
+  const [totalUsers, activeUsers, templateCount, auditEventCount, recentLogs, smtpSettings] =
     await Promise.all([
       getUserCount(),
       getActiveUserCount(),
       getTemplateCount(),
+      getAuditLogCount(),
       getAuditLogs({ limit: 8 }),
       getActiveSmtpSettings(),
     ])
@@ -53,8 +54,8 @@ export default async function DashboardPage() {
     },
     {
       title: "Audit Events",
-      value: recentLogs.length,
-      description: "Recent activity",
+      value: auditEventCount,
+      description: "Total recorded events",
       icon: ScrollText,
     },
   ]

@@ -13,9 +13,15 @@ import {
 import { ConfirmDialog } from "@/components/modals/confirm-dialog"
 import { toast } from "@/components/ui/use-toast"
 import { deleteRoleAction } from "@/modules/roles/actions"
-import { Pencil, Trash2, Lock, Plus } from "lucide-react"
+import { Pencil, Trash2, Lock, Plus, ShieldOff } from "lucide-react"
 import type { RoleWithPermissions } from "@/modules/roles/types"
 import { RoleModal } from "./role-modal"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface RolesListProps {
   roles: RoleWithPermissions[]
@@ -26,6 +32,7 @@ export function RolesList({ roles }: RolesListProps) {
   const [editRole, setEditRole] = React.useState<RoleWithPermissions | null>(null)
   const [deleteId, setDeleteId] = React.useState<string | null>(null)
   const [isLoading, setIsLoading] = React.useState(false)
+  const [viewPermsRole, setViewPermsRole] = React.useState<RoleWithPermissions | null>(null)
 
   async function handleDelete() {
     if (!deleteId) return
@@ -58,6 +65,14 @@ export function RolesList({ roles }: RolesListProps) {
           New Role
         </Button>
       </div>
+
+      {roles.length === 0 && (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center">
+          <ShieldOff className="mb-3 h-8 w-8 text-muted-foreground" />
+          <p className="text-sm font-medium">No roles configured</p>
+          <p className="mt-1 text-xs text-muted-foreground">Create your first role to start assigning permissions.</p>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {roles.map((role) => (
@@ -116,9 +131,14 @@ export function RolesList({ roles }: RolesListProps) {
                   ))
                 )}
                 {role.permissions.length > 6 && (
-                  <Badge variant="outline" className="text-xs">
-                    +{role.permissions.length - 6} more
-                  </Badge>
+                  <button
+                    onClick={() => setViewPermsRole(role)}
+                    className="inline-flex items-center"
+                  >
+                    <Badge variant="outline" className="text-xs cursor-pointer hover:bg-muted transition-colors">
+                      +{role.permissions.length - 6} more
+                    </Badge>
+                  </button>
                 )}
               </div>
             </CardContent>
@@ -146,6 +166,21 @@ export function RolesList({ roles }: RolesListProps) {
         onConfirm={handleDelete}
         isLoading={isLoading}
       />
+
+      <Dialog open={viewPermsRole !== null} onOpenChange={(open) => !open && setViewPermsRole(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="capitalize">{viewPermsRole?.name.replace(/_/g, " ")} — Permissions</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {viewPermsRole?.permissions.map((perm) => (
+              <Badge key={perm.id} variant="secondary" className="text-xs font-mono">
+                {perm.resource}.{perm.action}
+              </Badge>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

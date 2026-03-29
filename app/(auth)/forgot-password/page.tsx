@@ -47,7 +47,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-xl font-bold">
-            A
+            {appConfig.name.charAt(0).toUpperCase()}
           </div>
           <h1 className="text-2xl font-bold">{appConfig.name}</h1>
         </div>

@@ -1,6 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
+import { useRef } from "react"
 import { UsersTable } from "./users-table"
 import type { User } from "@/modules/users/types"
 
@@ -28,6 +29,7 @@ export function UsersTableWrapper({
   roles,
 }: UsersTableWrapperProps) {
   const router = useRouter()
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   function buildParams(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
@@ -44,7 +46,10 @@ export function UsersTableWrapper({
   }
 
   function handleSearch(value: string) {
-    router.push(`/admin/users?${buildParams({ search: value || undefined, page: "1" })}`)
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => {
+      router.push(`/admin/users?${buildParams({ search: value || undefined, page: "1" })}`)
+    }, 300)
   }
 
   function handleRoleChange(value: string) {

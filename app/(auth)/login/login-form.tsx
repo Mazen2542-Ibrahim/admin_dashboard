@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PasswordInput } from "@/components/forms/password-input"
 import { toast } from "@/components/ui/use-toast"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { AlertTriangle } from "lucide-react"
 import { Loader2 } from "lucide-react"
 import { features } from "@/config/features.config"
 
@@ -263,18 +265,21 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
   return (
     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
       {unverifiedEmail && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <p className="font-medium">Email not verified</p>
-          <p className="mt-1">
-            Please verify your email before signing in.{" "}
-            <Link
-              href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
-              className="font-medium underline"
-            >
-              Resend verification email
-            </Link>
-          </p>
-        </div>
+        <Alert variant="warning">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <p className="font-medium">Email not verified</p>
+            <p className="mt-1">
+              Please verify your email before signing in.{" "}
+              <Link
+                href={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                className="font-medium underline hover:no-underline"
+              >
+                Resend verification email
+              </Link>
+            </p>
+          </AlertDescription>
+        </Alert>
       )}
 
       {geoState === "blocked" && (
