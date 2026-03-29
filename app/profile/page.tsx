@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth"
 import { getUserById } from "@/modules/users/queries"
 import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { ProfileTabs } from "./profile-form"
+import { ThemeSync } from "@/components/theme-sync"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -21,6 +22,7 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
+      <ThemeSync theme={user.themePreference} />
       {/* Hero card */}
       <Card className="overflow-hidden">
         <div className="h-20 sm:h-24 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent" />
@@ -74,6 +76,7 @@ export default async function ProfilePage() {
         emailVerified={user.emailVerified}
         createdAt={user.createdAt}
         smtpConfigured={!!smtpSettings}
+        themePreference={user.themePreference}
       />
     </div>
   )

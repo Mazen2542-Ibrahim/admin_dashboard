@@ -17,10 +17,19 @@ import {
   updateProfileAction,
   requestEmailChangeAction,
   logPasswordChangedAction,
+  updateThemeAction,
 } from "@/modules/users/actions"
 import { changePassword } from "@/lib/auth-client"
-import { Loader2, ShieldCheck, ShieldOff, Mail } from "lucide-react"
-import { formatDate } from "@/lib/utils"
+import { useTheme } from "next-themes"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Loader2, ShieldCheck, ShieldOff, Mail, Sun, Moon, Monitor, ChevronDown, Check } from "lucide-react"
+import { formatDate, cn } from "@/lib/utils"
 
 interface ProfileTabsProps {
   name: string
@@ -30,6 +39,7 @@ interface ProfileTabsProps {
   emailVerified: boolean
   createdAt: Date
   smtpConfigured: boolean
+  themePreference: string
 }
 
 export function ProfileTabs({
@@ -40,6 +50,7 @@ export function ProfileTabs({
   emailVerified,
   createdAt,
   smtpConfigured,
+  themePreference,
 }: ProfileTabsProps) {
   return (
     <Card>
@@ -70,6 +81,8 @@ export function ProfileTabs({
             emailVerified={emailVerified}
             createdAt={createdAt}
           />
+          <Separator />
+          <AppearanceSection themePreference={themePreference} />
         </TabsContent>
 
         {/* ── Security ───────────────────────────────────────────────────── */}
@@ -448,6 +461,100 @@ function ChangeEmailSection({
           Send Verification
         </Button>
       </form>
+    </div>
+  )
+}
+
+// ─── General: Appearance ──────────────────────────────────────────────────────
+
+const THEME_OPTIONS = [
+  {
+    value: "light",
+    label: "Light",
+    description: "Always use light mode",
+    icon: Sun,
+  },
+  {
+    value: "dark",
+    label: "Dark",
+    description: "Always use dark mode",
+    icon: Moon,
+  },
+  {
+    value: "system",
+    label: "System",
+    description: "Follow your device setting",
+    icon: Monitor,
+  },
+] as const
+
+function AppearanceSection({ themePreference }: { themePreference: string }) {
+  const { theme, setTheme } = useTheme()
+  const current = (theme ?? themePreference) as "light" | "dark" | "system"
+
+  const active = THEME_OPTIONS.find((o) => o.value === current) ?? THEME_OPTIONS[2]
+  const ActiveIcon = active.icon
+
+  function handleThemeChange(value: string) {
+    const safe = value as "light" | "dark" | "system"
+    setTheme(safe)
+    updateThemeAction(safe).catch(() => {})
+  }
+
+  return (
+    <div className="space-y-3">
+      <div>
+        <p className="text-sm font-medium">Appearance</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Choose how the interface looks on this device.
+        </p>
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className={cn(
+              "flex w-full sm:w-64 items-center justify-between gap-3 rounded-md border px-3 py-2.5",
+              "text-sm bg-background hover:bg-muted transition-colors",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            )}
+          >
+            <span className="flex items-center gap-2.5">
+              <span className="flex h-7 w-7 items-center justify-center rounded-md border bg-muted">
+                <ActiveIcon className="h-3.5 w-3.5 text-foreground" />
+              </span>
+              <span className="flex flex-col items-start leading-tight">
+                <span className="font-medium">{active.label}</span>
+                <span className="text-xs text-muted-foreground">{active.description}</span>
+              </span>
+            </span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="start" className="w-64">
+          <DropdownMenuRadioGroup value={current} onValueChange={handleThemeChange}>
+            {THEME_OPTIONS.map(({ value, label, description, icon: Icon }) => (
+              <DropdownMenuRadioItem
+                key={value}
+                value={value}
+                className="flex items-center gap-3 px-3 py-2.5 [&>span:first-child]:hidden cursor-pointer"
+              >
+                <span className="flex h-7 w-7 items-center justify-center rounded-md border bg-muted shrink-0">
+                  <Icon className="h-3.5 w-3.5" />
+                </span>
+                <span className="flex flex-col leading-tight flex-1">
+                  <span className="font-medium text-sm">{label}</span>
+                  <span className="text-xs text-muted-foreground">{description}</span>
+                </span>
+                {current === value && (
+                  <Check className="h-4 w-4 text-primary shrink-0" />
+                )}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   lastLoginCountry: text("last_login_country"),
   lastLoginLatitude: real("last_login_latitude"),
   lastLoginLongitude: real("last_login_longitude"),
+  themePreference: text("theme_preference").notNull().default("system"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()

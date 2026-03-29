@@ -447,6 +447,20 @@ export async function unlockUserAccountAction(userId: string) {
   }
 }
 
+export async function updateThemeAction(theme: string): Promise<{ success?: boolean; error?: { message: string } }> {
+  try {
+    const session = await getSession()
+    if (!session?.user) return { error: { message: "Not authenticated" } }
+    const parsed = z.enum(["light", "dark", "system"]).safeParse(theme)
+    if (!parsed.success) return { error: { message: "Invalid theme" } }
+    const user = session.user as { id: string; email: string }
+    await updateUser(user.id, { themePreference: parsed.data }, user.id, user.email)
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
 export async function markEmailVerifiedAction(userId: string) {
   try {
     const session = await requirePermission("users:update")

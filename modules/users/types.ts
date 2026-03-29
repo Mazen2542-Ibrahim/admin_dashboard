@@ -12,6 +12,7 @@ export interface User {
   lastLoginAt?: Date | null
   failedLoginAttempts: number
   lockedUntil: Date | null
+  themePreference: string
   createdAt: Date
   updatedAt: Date
 }
@@ -40,6 +41,7 @@ export interface UpdateUserInput {
   emailVerified?: boolean
   role?: string
   isActive?: boolean
+  themePreference?: string
 }
 
 export interface UserListFilters {
