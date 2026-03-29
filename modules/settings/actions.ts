@@ -25,6 +25,7 @@ export async function updateAppSettingsAction(formData: unknown) {
     if (!parsed.success) return { error: parsed.error.flatten() }
 
     await upsertAppSettings(parsed.data, actor.id, actor.email)
+    revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {
     return { error: { message: (err as Error).message } }

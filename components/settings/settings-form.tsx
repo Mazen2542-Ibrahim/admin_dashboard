@@ -63,7 +63,12 @@ export function SettingsForm({ settings, smtpConfigured }: SettingsFormProps) {
     setValues(updated)
     setSaving(true)
 
-    const result = await updateAppSettingsAction(updated)
+    const result = await updateAppSettingsAction({
+      ...updated,
+      lockoutEnabled: settings.lockoutEnabled,
+      maxFailedAttempts: settings.maxFailedAttempts,
+      lockoutDurationMinutes: settings.lockoutDurationMinutes,
+    })
     setSaving(false)
 
     if (result.error) {

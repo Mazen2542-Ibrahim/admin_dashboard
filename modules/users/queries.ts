@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { users, accounts, sessions } from "@/db/schema"
-import { eq, ilike, or, count, and, gt, desc } from "drizzle-orm"
+import { eq, ilike, or, count, and, gt, gte, desc } from "drizzle-orm"
 import type { UserListFilters } from "./types"
 
 export async function getAllUsers(filters: UserListFilters = {}) {
@@ -80,6 +80,14 @@ export async function getAccountByUserId(userId: string) {
   return account ?? null
 }
 
+export async function getNewUserCount(since: Date) {
+  const [result] = await db
+    .select({ count: count() })
+    .from(users)
+    .where(gte(users.createdAt, since))
+  return result?.count ?? 0
+}
+
 export async function getActiveUserCount() {
   const [result] = await db
     .select({ count: count() })
@@ -94,6 +102,14 @@ export async function getActiveSessionsByUserId(userId: string) {
     .from(sessions)
     .where(and(eq(sessions.userId, userId), gt(sessions.expiresAt, new Date())))
     .orderBy(desc(sessions.createdAt))
+}
+
+export async function getLockedUserCount() {
+  const [result] = await db
+    .select({ count: count() })
+    .from(users)
+    .where(gt(users.lockedUntil, new Date()))
+  return result?.count ?? 0
 }
 
 export async function getCredentialAccount(userId: string) {
