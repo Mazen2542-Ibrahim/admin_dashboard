@@ -106,6 +106,7 @@ export function RegisterForm({ locationConfig, emailVerificationEnabled }: Regis
       name: values.name,
       email: values.email,
       password: values.password,
+      callbackURL: "/verify-email?verified=true",
     })
 
     if (result.error) {
