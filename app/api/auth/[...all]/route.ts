@@ -61,7 +61,7 @@ async function POST(req: NextRequest) {
     const settings = await getAppSettings()
     if (settings?.emailVerificationEnabled && !user.emailVerified) {
       return NextResponse.json(
-        { code: "EMAIL_UNVERIFIED", error: "Please verify your email before logging in." },
+        { code: "EMAIL_NOT_VERIFIED", error: "Please verify your email before logging in." },
         { status: 403 }
       )
     }

@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
-import { signUp } from "@/lib/auth-client"
+import { signUp, signOut } from "@/lib/auth-client"
 import { sendWelcomeEmailAction } from "@/modules/users/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,11 +40,12 @@ interface LocationConfig {
 
 interface RegisterFormProps {
   locationConfig: LocationConfig
+  emailVerificationEnabled: boolean
 }
 
 type GeoState = "idle" | "requesting" | "approved" | "blocked"
 
-export function RegisterForm({ locationConfig }: RegisterFormProps) {
+export function RegisterForm({ locationConfig, emailVerificationEnabled }: RegisterFormProps) {
   const router = useRouter()
   const [geoState, setGeoState] = React.useState<GeoState>("idle")
 
@@ -119,7 +120,13 @@ export function RegisterForm({ locationConfig }: RegisterFormProps) {
     // Fire-and-forget welcome email — must not block redirect
     sendWelcomeEmailAction(values.email, values.name).catch(() => {})
 
-    toast({ title: "Account created!", description: "You can now sign in." })
+    if (emailVerificationEnabled) {
+      // Sign out the auto-created session so the user can't bypass email verification
+      await signOut()
+      toast({ title: "Account created!", description: "Check your email for a verification link." })
+    } else {
+      toast({ title: "Account created!", description: "You can now sign in." })
+    }
     router.push("/login")
   }
 

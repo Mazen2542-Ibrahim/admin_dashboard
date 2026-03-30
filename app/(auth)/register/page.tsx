@@ -40,7 +40,10 @@ export default async function RegisterPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <RegisterForm locationConfig={locationConfig} />
+            <RegisterForm
+              locationConfig={locationConfig}
+              emailVerificationEnabled={settings?.emailVerificationEnabled ?? false}
+            />
           </CardContent>
         </Card>
       </div>

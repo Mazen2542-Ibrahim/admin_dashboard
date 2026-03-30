@@ -153,7 +153,7 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    if (res.status === 403 && data.code === "EMAIL_UNVERIFIED") {
+    if (res.status === 403 && data.code === "EMAIL_NOT_VERIFIED") {
       setUnverifiedEmail(values.email)
       return
     }
