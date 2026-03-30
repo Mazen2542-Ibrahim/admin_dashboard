@@ -25,26 +25,27 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ allowed: true })
   }
 
-  const { allowedCountries } = settings
-
-  // Resolve server-side (IP/CDN) country
-  const serverCountry =
-    getCountryFromHeaders(request.headers) ?? (await getCountryFromIp(ip))
-
-  // Resolve coordinate country (only if provided)
-  let coordCountry: string | null = null
-  if (latitude != null && longitude != null) {
-    coordCountry = await getCountryFromCoordinates(latitude, longitude)
+  // Coordinates are required — deny if the client didn't provide them
+  if (latitude == null || longitude == null) {
+    return NextResponse.json({ allowed: false, reason: "location_required" })
   }
 
+  const { allowedCountries } = settings
+
+  // Resolve country: GPS coordinates first, fall back to server-side IP/CDN
+  const [coordCountry, serverCountry] = await Promise.all([
+    getCountryFromCoordinates(latitude, longitude),
+    Promise.resolve(getCountryFromHeaders(request.headers)).then(
+      (h) => h ?? getCountryFromIp(ip)
+    ),
+  ])
+
+  // GPS-resolved country takes precedence; IP is the fallback
   const effectiveCountry = coordCountry ?? serverCountry
 
-  const coordAllowed = latitude != null && longitude != null
-    ? isCountryAllowed(coordCountry, allowedCountries)
-    : true
-  const serverAllowed = !serverCountry || isCountryAllowed(serverCountry, allowedCountries)
-
-  const allowed = coordAllowed && serverAllowed
+  // If country can't be determined at all (geocoding + IP both failed),
+  // allow through — the user already proved presence by granting GPS access.
+  const allowed = !effectiveCountry || isCountryAllowed(effectiveCountry, allowedCountries)
 
   if (!allowed) {
     await logAudit({

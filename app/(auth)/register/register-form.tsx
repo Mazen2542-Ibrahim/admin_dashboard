@@ -43,7 +43,7 @@ interface RegisterFormProps {
   emailVerificationEnabled: boolean
 }
 
-type GeoState = "idle" | "requesting" | "approved" | "blocked"
+type GeoState = "idle" | "requesting" | "approved" | "blocked" | "denied"
 
 export function RegisterForm({ locationConfig, emailVerificationEnabled }: RegisterFormProps) {
   const router = useRouter()
@@ -60,29 +60,31 @@ export function RegisterForm({ locationConfig, emailVerificationEnabled }: Regis
 
     setGeoState("requesting")
 
-    // Try to get GPS coords, but treat all failures as non-blocking.
-    // The server-side IP check is the authoritative gate; GPS only adds accuracy.
-    let coords: { latitude: number; longitude: number } | undefined
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
-      try {
-        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            timeout: 8000,
-            maximumAge: 300000,
-            enableHighAccuracy: false,
-          })
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoState("denied")
+      return false
+    }
+
+    let coords: { latitude: number; longitude: number }
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          timeout: 8000,
+          maximumAge: 300000,
+          enableHighAccuracy: false,
         })
-        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
-      } catch {
-        // GPS unavailable, denied, or timed out — fall back to IP-only check
-      }
+      })
+      coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+    } catch {
+      setGeoState("denied")
+      return false
     }
 
     try {
       const res = await fetch("/api/auth/location-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(coords ?? {}),
+        body: JSON.stringify(coords),
       })
       const data = (await res.json()) as { allowed: boolean }
       if (data.allowed) {
@@ -133,6 +135,13 @@ export function RegisterForm({ locationConfig, emailVerificationEnabled }: Regis
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      {geoState === "denied" && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <p className="font-medium">Location access required</p>
+          <p className="mt-1">Please enable location services in your browser and try again.</p>
+        </div>
+      )}
+
       {geoState === "blocked" && (
         <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           <p className="font-medium">Access restricted</p>
@@ -213,7 +222,7 @@ export function RegisterForm({ locationConfig, emailVerificationEnabled }: Regis
       <Button
         type="submit"
         className="w-full"
-        disabled={form.formState.isSubmitting || geoState === "requesting"}
+        disabled={form.formState.isSubmitting || geoState === "requesting" || geoState === "denied"}
       >
         {(form.formState.isSubmitting || geoState === "requesting") && (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
