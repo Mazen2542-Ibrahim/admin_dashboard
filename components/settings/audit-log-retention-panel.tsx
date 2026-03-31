@@ -55,6 +55,9 @@ export function AuditLogRetentionPanel({ settings }: AuditLogRetentionPanelProps
       registrationEnabled: settings.registrationEnabled,
       emailOtpEnabled: settings.emailOtpEnabled,
       auditLogRetentionDays: days,
+      lockoutEnabled: settings.lockoutEnabled,
+      maxFailedAttempts: settings.maxFailedAttempts,
+      lockoutDurationMinutes: settings.lockoutDurationMinutes,
     })
 
     setSaving(false)
