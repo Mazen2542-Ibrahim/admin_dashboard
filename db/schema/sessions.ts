@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core"
 import { users } from "./users"
 
 export const sessions = pgTable("sessions", {
@@ -15,4 +15,7 @@ export const sessions = pgTable("sessions", {
     .notNull()
     .defaultNow()
     .$onUpdateFn(() => new Date()),
-})
+}, (t) => ({
+  userIdIdx:    index("sessions_user_id_idx").on(t.userId),
+  expiresAtIdx: index("sessions_expires_at_idx").on(t.expiresAt),
+}))

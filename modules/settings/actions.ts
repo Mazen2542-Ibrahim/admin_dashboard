@@ -1,6 +1,6 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import { requirePermission } from "@/lib/auth"
 import { updateSettingsSchema, updateLocationSettingsSchema } from "./schema"
 import { upsertAppSettings, upsertLocationSettings } from "./service"
@@ -25,6 +25,7 @@ export async function updateAppSettingsAction(formData: unknown) {
     if (!parsed.success) return { error: parsed.error.flatten() }
 
     await upsertAppSettings(parsed.data, actor.id, actor.email)
+    revalidateTag("app-settings")
     revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {

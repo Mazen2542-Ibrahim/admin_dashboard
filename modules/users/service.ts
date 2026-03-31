@@ -11,12 +11,13 @@ export async function createUser(
   actorId?: string,
   actorEmail?: string
 ) {
-  const existing = await getUserByEmail(input.email)
+  const [existing, passwordHash] = await Promise.all([
+    getUserByEmail(input.email),
+    hashPassword(input.password),
+  ])
   if (existing) {
     throw new Error("A user with this email already exists")
   }
-
-  const passwordHash = await hashPassword(input.password)
 
   const [newUser] = await db
     .insert(users)

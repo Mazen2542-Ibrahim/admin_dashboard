@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
   }
 
   const ip = getIp(request.headers)
-  const rl = rateLimit({ key: `otp-verify:${ip}:${email}`, limit: 5, windowMs: 15 * 60 * 1000 })
+  const rl = await rateLimit({ key: `otp-verify:${ip}:${email}`, limit: 5, windowMs: 15 * 60 * 1000 })
   if (!rl.success) {
     return Response.json(
       { error: "Too many attempts. Please try again later." },

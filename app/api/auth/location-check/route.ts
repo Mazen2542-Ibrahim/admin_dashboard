@@ -6,7 +6,7 @@ import { logAudit } from "@/modules/audit-logs/service"
 
 export async function POST(request: NextRequest) {
   const ip = getIp(request.headers)
-  const rl = rateLimit({ key: `location-check:${ip}`, limit: 10, windowMs: 60_000 })
+  const rl = await rateLimit({ key: `location-check:${ip}`, limit: 10, windowMs: 60_000 })
   if (!rl.success) {
     return NextResponse.json({ error: "Too many requests" }, { status: 429 })
   }

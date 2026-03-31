@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core"
+import { pgTable, text, timestamp, uuid, index } from "drizzle-orm/pg-core"
 import { users } from "./users"
 
 export const accounts = pgTable("accounts", {
@@ -18,4 +18,6 @@ export const accounts = pgTable("accounts", {
     .notNull()
     .defaultNow()
     .$onUpdateFn(() => new Date()),
-})
+}, (t) => ({
+  userIdIdx: index("accounts_user_id_idx").on(t.userId),
+}))

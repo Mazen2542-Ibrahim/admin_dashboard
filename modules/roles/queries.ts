@@ -4,13 +4,26 @@ import { eq } from "drizzle-orm"
 import type { RoleWithPermissions } from "./types"
 
 export async function getAllRoles(): Promise<RoleWithPermissions[]> {
-  const allRoles = await db.select().from(roles)
-  const allPermissions = await db.select().from(permissions)
+  const rows = await db
+    .select({
+      role: roles,
+      permission: permissions,
+    })
+    .from(roles)
+    .leftJoin(permissions, eq(permissions.roleId, roles.id))
 
-  return allRoles.map((role) => ({
-    ...role,
-    permissions: allPermissions.filter((p) => p.roleId === role.id),
-  }))
+  // Group permissions by role ID
+  const roleMap = new Map<string, RoleWithPermissions>()
+  for (const { role, permission } of rows) {
+    if (!roleMap.has(role.id)) {
+      roleMap.set(role.id, { ...role, permissions: [] })
+    }
+    if (permission) {
+      roleMap.get(role.id)!.permissions.push(permission)
+    }
+  }
+
+  return Array.from(roleMap.values())
 }
 
 export async function getRoleById(id: string): Promise<RoleWithPermissions | null> {

@@ -37,7 +37,7 @@ async function POST(req: NextRequest) {
     if (!email) return betterAuthHandler.POST(req)
 
     const ip = getIp(req.headers)
-    const rl = rateLimit({ key: `sign-in:${ip}`, limit: 10, windowMs: 15 * 60 * 1000 })
+    const rl = await rateLimit({ key: `sign-in:${ip}`, limit: 10, windowMs: 15 * 60 * 1000 })
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many login attempts. Please try again later." },
@@ -122,7 +122,7 @@ async function POST(req: NextRequest) {
   // Registration guard
   if (url.pathname === "/api/auth/sign-up/email") {
     const ip = getIp(req.headers)
-    const rl = rateLimit({ key: `sign-up:${ip}`, limit: 5, windowMs: 60 * 60 * 1000 })
+    const rl = await rateLimit({ key: `sign-up:${ip}`, limit: 5, windowMs: 60 * 60 * 1000 })
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many registration attempts. Please try again later." },
@@ -141,7 +141,7 @@ async function POST(req: NextRequest) {
 
   if (url.pathname === "/api/auth/forget-password") {
     const ip = getIp(req.headers)
-    const rl = rateLimit({ key: `password-reset:${ip}`, limit: 5, windowMs: 15 * 60 * 1000 })
+    const rl = await rateLimit({ key: `password-reset:${ip}`, limit: 5, windowMs: 15 * 60 * 1000 })
     if (!rl.success) {
       return NextResponse.json(
         { error: "Too many password reset requests. Please try again later." },

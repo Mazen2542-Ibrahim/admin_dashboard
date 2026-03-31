@@ -57,6 +57,13 @@
       "when": 1774803447619,
       "tag": "0007_ambitious_alice",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1774992884926,
+      "tag": "0008_youthful_zombie",
+      "breakpoints": true
     }
   ]
 }

@@ -28,7 +28,7 @@ export async function testSmtpAction(formData: unknown) {
     const actor = session.user as { id: string; email: string }
 
     // Rate limit: 3 test emails per minute per user
-    const { success: rateLimitOk } = rateLimit({
+    const { success: rateLimitOk } = await rateLimit({
       key: `smtp-test:${actor.id}`,
       limit: 3,
       windowMs: 60_000,
