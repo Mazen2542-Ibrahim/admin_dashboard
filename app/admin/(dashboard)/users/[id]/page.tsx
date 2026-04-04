@@ -29,7 +29,9 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
 
   if (!user) redirect("/admin/users")
 
-  const roles = allRoles.map((r) => ({ id: r.id, name: r.name }))
+  const roles = allRoles
+    .filter((r) => r.name !== "visitor")
+    .map((r) => ({ id: r.id, name: r.name }))
   const isSelf = session?.user.id === params.id
   const currentSessionId = (session as { session?: { id?: string } } | null)?.session?.id
 

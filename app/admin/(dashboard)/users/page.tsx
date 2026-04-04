@@ -24,7 +24,9 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     getAllRoles(),
   ])
 
-  const roles = allRoles.map((r) => ({ id: r.id, name: r.name }))
+  const roles = allRoles
+    .filter((r) => r.name !== "visitor")
+    .map((r) => ({ id: r.id, name: r.name }))
 
   return (
     <div className="space-y-6">
