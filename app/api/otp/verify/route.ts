@@ -1,7 +1,8 @@
 import { db } from "@/lib/db"
-import { verifications, sessions } from "@/db/schema"
+import { verifications } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { makeSignature } from "better-auth/crypto"
+import { auth } from "@/lib/auth"
 import { getUserByEmail } from "@/modules/users/queries"
 import { logAudit } from "@/modules/audit-logs/service"
 import { rateLimit, getIp } from "@/lib/rate-limit"
@@ -48,16 +49,13 @@ export async function POST(request: NextRequest) {
   // Delete the used OTP
   await db.delete(verifications).where(eq(verifications.identifier, identifier))
 
-  // Create session in DB
-  const token = crypto.randomUUID()
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
-
-  await db.insert(sessions).values({
-    id: crypto.randomUUID(),
-    userId: user.id,
-    token,
-    expiresAt,
-  })
+  // Create session through better-auth's internal adapter so the token format,
+  // DB row, and cookie are all consistent with what better-auth expects.
+  const authCtx = await auth.$context
+  const session = await authCtx.internalAdapter.createSession(user.id)
+  if (!session) {
+    return Response.json({ error: "Failed to create session" }, { status: 500 })
+  }
 
   await logAudit({
     actorId: user.id,
@@ -67,18 +65,27 @@ export async function POST(request: NextRequest) {
     resourceId: user.id,
   })
 
-  // better-auth reads signed cookies — value must be `token.HMAC_signature`
-  const secret = process.env.BETTER_AUTH_SECRET!
-  const signature = await makeSignature(token, secret)
-  const signedToken = `${token}.${signature}`
+  // Compute the correct cookie name — better-auth uses the __Secure- prefix
+  // whenever BETTER_AUTH_URL is HTTPS (which is always the case on Vercel).
+  const betterAuthURL = process.env.BETTER_AUTH_URL ?? ""
+  const isSecure = betterAuthURL
+    ? betterAuthURL.startsWith("https://")
+    : process.env.NODE_ENV === "production"
+  const secureCookiePrefix = isSecure ? "__Secure-" : ""
+  const cookieName = `${secureCookiePrefix}better-auth.session_token`
 
-  const cookieValue = `better-auth.session_token=${signedToken}; Path=/; HttpOnly; SameSite=Lax; Expires=${expiresAt.toUTCString()}`
+  // Sign the token and URI-encode the value, matching better-call's signCookieValue
+  const signature = await makeSignature(session.token, authCtx.secret)
+  const signedAndEncoded = encodeURIComponent(`${session.token}.${signature}`)
+
+  const secureAttr = isSecure ? "; Secure" : ""
+  const cookieHeader = `${cookieName}=${signedAndEncoded}; Path=/; HttpOnly; SameSite=Lax${secureAttr}; Expires=${session.expiresAt.toUTCString()}`
 
   return new Response(JSON.stringify({ success: true }), {
     status: 200,
     headers: {
       "Content-Type": "application/json",
-      "Set-Cookie": cookieValue,
+      "Set-Cookie": cookieHeader,
     },
   })
 }
