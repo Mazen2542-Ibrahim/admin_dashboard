@@ -13,8 +13,9 @@ import {
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { X, CalendarIcon } from "lucide-react"
+import { X, CalendarIcon, RefreshCw } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { useTransition } from "react"
 
 const RESOURCE_TYPES = ["user", "role", "smtp", "email_template", "settings", "audit_log"]
 
@@ -126,6 +127,7 @@ export function AuditLogFilters({
   const pathname = usePathname()
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [actorInput, setActorInput] = useState(actorEmail ?? "")
+  const [isRefreshing, startRefresh] = useTransition()
 
   useEffect(() => { setActorInput(actorEmail ?? "") }, [actorEmail])
 
@@ -225,6 +227,14 @@ export function AuditLogFilters({
           Clear
         </Button>
       )}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => startRefresh(() => router.refresh())}
+        disabled={isRefreshing}
+      >
+        <RefreshCw className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")} />
+      </Button>
     </div>
   )
 }
