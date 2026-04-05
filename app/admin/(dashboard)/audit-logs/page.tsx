@@ -3,16 +3,6 @@ import Link from "next/link"
 import { getAuditLogs, getAuditLogCount } from "@/modules/audit-logs/queries"
 import { features } from "@/config/features.config"
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import {
   Card,
   CardContent,
   CardDescription,
@@ -20,8 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { AuditLogFilters } from "./audit-log-filters"
-import { formatDateTime, truncate } from "@/lib/utils"
+import { AuditLogTable } from "./audit-log-table"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 interface AuditLogsPageProps {
@@ -29,6 +20,9 @@ interface AuditLogsPageProps {
     page?: string
     actorEmail?: string
     resourceType?: string
+    action?: string
+    dateFrom?: string
+    dateTo?: string
   }
 }
 
@@ -44,12 +38,26 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
     limit: pageSize,
     actorEmail: searchParams.actorEmail,
     resourceType: searchParams.resourceType,
+    action: searchParams.action,
+    dateFrom: searchParams.dateFrom ? new Date(searchParams.dateFrom) : undefined,
+    dateTo:   searchParams.dateTo   ? new Date(searchParams.dateTo)   : undefined,
   }
 
   const [logs, total] = await Promise.all([
     getAuditLogs(filters),
     getAuditLogCount(filters),
   ])
+
+  function buildPageUrl(targetPage: number) {
+    return (
+      `/admin/audit-logs?page=${targetPage}` +
+      (searchParams.actorEmail   ? `&actorEmail=${encodeURIComponent(searchParams.actorEmail)}`     : "") +
+      (searchParams.resourceType ? `&resourceType=${searchParams.resourceType}`                     : "") +
+      (searchParams.action       ? `&action=${encodeURIComponent(searchParams.action)}`             : "") +
+      (searchParams.dateFrom     ? `&dateFrom=${encodeURIComponent(searchParams.dateFrom)}`         : "") +
+      (searchParams.dateTo       ? `&dateTo=${encodeURIComponent(searchParams.dateTo)}`             : "")
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -70,63 +78,15 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
             <AuditLogFilters
               actorEmail={searchParams.actorEmail}
               resourceType={searchParams.resourceType}
+              action={searchParams.action}
+              dateFrom={searchParams.dateFrom}
+              dateTo={searchParams.dateTo}
               page={page}
             />
           </div>
         </CardHeader>
         <CardContent>
-
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Time</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Resource</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Resource ID</TableHead>
-                <TableHead>IP</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {logs.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    No audit logs found
-                  </TableCell>
-                </TableRow>
-              ) : (
-                logs.map((log) => (
-                  <TableRow key={log.id}>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDateTime(log.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="font-mono text-xs">
-                        {log.action}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {log.resourceType}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {log.actorEmail ?? (
-                        <span className="text-muted-foreground">System</span>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">
-                      {log.resourceId ? truncate(log.resourceId, 12) : "—"}
-                    </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">
-                      {log.ipAddress ?? "—"}
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+          <AuditLogTable logs={logs} />
         </CardContent>
         {total > pageSize && (
           <CardFooter className="flex items-center justify-between border-t px-6 py-4">
@@ -140,7 +100,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                 </Button>
               ) : (
                 <Button variant="outline" size="icon" asChild>
-                  <Link href={`/admin/audit-logs?page=${page - 1}${searchParams.actorEmail ? `&actorEmail=${encodeURIComponent(searchParams.actorEmail)}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                  <Link href={buildPageUrl(page - 1)}>
                     <ChevronLeft className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -151,7 +111,7 @@ export default async function AuditLogsPage({ searchParams }: AuditLogsPageProps
                 </Button>
               ) : (
                 <Button variant="outline" size="icon" asChild>
-                  <Link href={`/admin/audit-logs?page=${page + 1}${searchParams.actorEmail ? `&actorEmail=${encodeURIComponent(searchParams.actorEmail)}` : ""}${searchParams.resourceType ? `&resourceType=${searchParams.resourceType}` : ""}`}>
+                  <Link href={buildPageUrl(page + 1)}>
                     <ChevronRight className="h-4 w-4" />
                   </Link>
                 </Button>

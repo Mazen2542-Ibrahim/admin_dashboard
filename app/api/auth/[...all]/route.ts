@@ -11,6 +11,7 @@ import { db } from "@/lib/db"
 import { verifications } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { rateLimit, getIp } from "@/lib/rate-limit"
+import { logActivityFromRequest } from "@/lib/activity-logger"
 
 const betterAuthHandler = toNextJsHandler(auth)
 
@@ -39,6 +40,11 @@ async function POST(req: NextRequest) {
     const ip = getIp(req.headers)
     const rl = await rateLimit({ key: `sign-in:${ip}`, limit: 10, windowMs: 15 * 60 * 1000 })
     if (!rl.success) {
+      await logActivityFromRequest(req.headers, {
+        action: "user.login_failed",
+        resourceType: "user",
+        metadata: { reason: "rate_limited", email },
+      })
       return NextResponse.json(
         { error: "Too many login attempts. Please try again later." },
         { status: 429, headers: { "Retry-After": String(Math.ceil((rl.resetAt - Date.now()) / 1000)) } }
@@ -51,6 +57,14 @@ async function POST(req: NextRequest) {
 
     // 2. Check inactive
     if (!user.isActive) {
+      await logActivityFromRequest(req.headers, {
+        action: "user.login_failed",
+        resourceType: "user",
+        actorId: user.id,
+        actorEmail: user.email,
+        resourceId: user.id,
+        metadata: { reason: "account_deactivated" },
+      })
       return NextResponse.json(
         { error: "Your account has been deactivated. Contact an administrator." },
         { status: 403 }
@@ -68,6 +82,14 @@ async function POST(req: NextRequest) {
 
     // 4. Check lockout
     if (settings?.lockoutEnabled && user.lockedUntil && user.lockedUntil > new Date()) {
+      await logActivityFromRequest(req.headers, {
+        action: "user.login_failed",
+        resourceType: "user",
+        actorId: user.id,
+        actorEmail: user.email,
+        resourceId: user.id,
+        metadata: { reason: "account_locked" },
+      })
       return NextResponse.json(
         { code: "ACCOUNT_LOCKED", error: "Account temporarily locked due to too many failed attempts.", unlocksAt: user.lockedUntil },
         { status: 403 }
@@ -85,6 +107,14 @@ async function POST(req: NextRequest) {
         if (settings.lockoutEnabled) {
           await recordFailedLoginAttempt(user.id, settings.maxFailedAttempts, settings.lockoutDurationMinutes)
         }
+        await logActivityFromRequest(req.headers, {
+          action: "user.login_failed",
+          resourceType: "user",
+          actorId: user.id,
+          actorEmail: user.email,
+          resourceId: user.id,
+          metadata: { reason: "invalid_password" },
+        })
         return NextResponse.json({ error: "Invalid email or password." }, { status: 401 })
       }
 

@@ -28,6 +28,7 @@ import { db } from "@/lib/db"
 import { verifications, users } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 import { auth } from "@/lib/auth"
 
 export async function createUserAction(formData: unknown) {
@@ -162,7 +163,7 @@ export async function logSignInAction(
     const session = await getSession()
     if (!session?.user) return
     const user = session.user as { id: string; email: string }
-    await logAudit({
+    await logActivity({
       actorId: user.id,
       actorEmail: user.email,
       action: "user.signed_in",
@@ -266,7 +267,7 @@ export async function logPasswordChangedAction(): Promise<void> {
     const session = await getSession()
     if (!session?.user) return
     const user = session.user as { id: string; email: string }
-    await logAudit({
+    await logActivity({
       actorId: user.id,
       actorEmail: user.email,
       action: "user.password_changed",

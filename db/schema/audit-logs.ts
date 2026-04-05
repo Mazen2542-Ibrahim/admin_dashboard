@@ -12,6 +12,7 @@ export const auditLogs = pgTable("audit_logs", {
   metadata: jsonb("metadata").$type<Record<string, unknown>>(),
   ipAddress: text("ip_address"),
   userAgent: text("user_agent"),
+  description: text("description"),
   // append-only — no updatedAt
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => ({

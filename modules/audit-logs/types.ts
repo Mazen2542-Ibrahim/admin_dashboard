@@ -8,6 +8,7 @@ export interface AuditLog {
   metadata: Record<string, unknown> | null
   ipAddress: string | null
   userAgent: string | null
+  description: string | null
   createdAt: Date
 }
 
@@ -20,6 +21,7 @@ export interface LogAuditInput {
   metadata?: Record<string, unknown>
   ipAddress?: string
   userAgent?: string
+  description?: string
 }
 
 export interface AuditLogFilters {

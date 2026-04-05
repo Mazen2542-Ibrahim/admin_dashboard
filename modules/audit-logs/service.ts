@@ -39,6 +39,7 @@ export async function logAudit(input: LogAuditInput): Promise<void> {
       metadata: input.metadata ?? null,
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
+      description: input.description ?? null,
     })
   } catch (err) {
     console.error("[audit-logs] Failed to write audit log:", err)
