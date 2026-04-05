@@ -95,6 +95,9 @@ function DatePicker({ value, onChange, placeholder }: DatePickerProps) {
             onChange(date)
             setOpen(false)
           }}
+          captionLayout="dropdown"
+          startMonth={new Date(2020, 0)}
+          endMonth={new Date(2030, 11)}
           initialFocus
         />
       </PopoverContent>

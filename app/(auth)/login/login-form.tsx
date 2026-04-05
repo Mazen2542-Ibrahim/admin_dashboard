@@ -171,7 +171,7 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
     }
 
     // Successful sign-in
-    logSignInAction(detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
+    logSignInAction(values.email, detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }
@@ -207,7 +207,7 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    logSignInAction(detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
+    logSignInAction(emailForOtp, detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }

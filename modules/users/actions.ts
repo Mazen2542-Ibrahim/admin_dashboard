@@ -157,12 +157,13 @@ export async function updateProfileAction(formData: unknown) {
 
 /** Called client-side after a successful sign-in to write an audit entry */
 export async function logSignInAction(
+  email: string,
   location?: { country?: string; latitude?: number; longitude?: number }
 ): Promise<void> {
   try {
-    const session = await getSession()
-    if (!session?.user) return
-    const user = session.user as { id: string; email: string }
+    // Use the email passed directly from the form — avoids session cache timing issues
+    const user = await getUserByEmail(email)
+    if (!user) return
     await logActivity({
       actorId: user.id,
       actorEmail: user.email,
