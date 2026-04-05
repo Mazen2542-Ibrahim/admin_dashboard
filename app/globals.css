@@ -76,3 +76,13 @@
     padding-right: env(safe-area-inset-right);
   }
 }
+
+/* Prevent iOS Safari auto-zoom on input focus (requires font-size ≥ 16px).
+   Placed outside @layer so unlayered specificity beats @layer utilities (text-sm). */
+@media (max-width: 639px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea,
+  select {
+    font-size: 1rem; /* 16px */
+  }
+}
