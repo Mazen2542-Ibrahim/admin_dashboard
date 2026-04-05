@@ -10,7 +10,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { formatDateTime, truncate } from "@/lib/utils"
+import { formatDateTime } from "@/lib/utils"
+import { ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 import type { AuditLog } from "@/modules/audit-logs/types"
 
 function getBadgeVariant(action: string): "destructive" | "success" | "warning" | "outline" {
@@ -50,9 +52,9 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-4" />
           <TableHead>Time</TableHead>
           <TableHead>Action</TableHead>
-          <TableHead>Description</TableHead>
           <TableHead>Resource</TableHead>
           <TableHead>Actor</TableHead>
           <TableHead>IP</TableHead>
@@ -74,6 +76,9 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
                 onClick={() => setExpandedId(log.id === expandedId ? null : log.id)}
                 className="cursor-pointer"
               >
+                <TableCell className="w-4 pr-0">
+                  <ChevronRight className={cn("h-4 w-4 text-muted-foreground transition-transform duration-150", expandedId === log.id && "rotate-90")} />
+                </TableCell>
                 <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                   {formatDateTime(log.createdAt)}
                 </TableCell>
@@ -81,9 +86,6 @@ export function AuditLogTable({ logs }: AuditLogTableProps) {
                   <Badge variant={getBadgeVariant(log.action)} className="font-mono text-xs">
                     {log.action}
                   </Badge>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">
-                  {truncate(log.description ?? "—", 48)}
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {log.resourceType}
