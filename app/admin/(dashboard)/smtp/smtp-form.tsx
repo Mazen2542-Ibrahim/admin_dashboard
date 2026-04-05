@@ -197,12 +197,11 @@ export function SmtpForm({ settings }: SmtpFormProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row">
               <Input
                 placeholder="test@example.com"
                 value={testEmail}
                 onChange={(e) => setTestEmail(e.target.value)}
-                className="max-w-sm"
               />
               <Button
                 variant="outline"

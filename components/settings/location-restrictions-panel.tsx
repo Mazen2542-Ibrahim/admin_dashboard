@@ -132,14 +132,14 @@ export function LocationRestrictionsPanel({ settings }: LocationRestrictionsPane
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-[220px] justify-between"
+                className="w-full sm:w-[220px] justify-between"
                 disabled={saving}
               >
                 Add country…
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[280px] p-0" align="start">
+            <PopoverContent className="w-[min(280px,_calc(100vw_-_2rem))] p-0" align="start">
               <Command>
                 <CommandInput placeholder="Search countries…" />
                 <CommandList>

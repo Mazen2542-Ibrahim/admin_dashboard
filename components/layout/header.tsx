@@ -27,7 +27,7 @@ export function Header({ title, onMenuClick, initialUser }: HeaderProps) {
           </Button>
         )}
         {title && (
-          <h1 className="text-lg font-semibold">{title}</h1>
+          <h1 className="text-base font-semibold sm:text-lg truncate">{title}</h1>
         )}
       </div>
       <div className="flex items-center gap-4">

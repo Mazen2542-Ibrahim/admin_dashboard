@@ -119,9 +119,9 @@ export function UsersTable({
         onSearch={onSearch}
         pagination={{ page, pageSize, total, onPageChange }}
         toolbar={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={role ?? ""} onValueChange={(v) => onRoleChange?.(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[130px] h-9">
+              <SelectTrigger className="w-full sm:w-[130px] h-9">
                 <SelectValue placeholder="All roles" />
               </SelectTrigger>
               <SelectContent>
@@ -135,7 +135,7 @@ export function UsersTable({
             </Select>
 
             <Select value={status ?? ""} onValueChange={(v) => onStatusChange?.(v === "all" ? "" : v)}>
-              <SelectTrigger className="w-[130px] h-9">
+              <SelectTrigger className="w-full sm:w-[130px] h-9">
                 <SelectValue placeholder="All status" />
               </SelectTrigger>
               <SelectContent>
@@ -145,7 +145,7 @@ export function UsersTable({
               </SelectContent>
             </Select>
 
-            <Button onClick={() => setCreateOpen(true)}>
+            <Button className="w-full sm:w-auto" onClick={() => setCreateOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               New User
             </Button>

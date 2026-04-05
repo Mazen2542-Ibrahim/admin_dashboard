@@ -186,6 +186,7 @@ export default async function DashboardPage() {
           {recentLogs.length === 0 ? (
             <p className="py-4 text-center text-sm text-muted-foreground">No activity yet</p>
           ) : (
+            <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -216,6 +217,7 @@ export default async function DashboardPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

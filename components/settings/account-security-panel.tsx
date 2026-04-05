@@ -126,7 +126,7 @@ export function AccountSecurityPanel({ settings }: AccountSecurityPanelProps) {
             onValueChange={handleMaxAttempts}
             disabled={!lockoutEnabled || saving}
           >
-            <SelectTrigger id="max-attempts-select" className="w-[160px]">
+            <SelectTrigger id="max-attempts-select" className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -153,7 +153,7 @@ export function AccountSecurityPanel({ settings }: AccountSecurityPanelProps) {
             onValueChange={handleDuration}
             disabled={!lockoutEnabled || saving}
           >
-            <SelectTrigger id="lockout-duration-select" className="w-[160px]">
+            <SelectTrigger id="lockout-duration-select" className="w-full sm:w-[160px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

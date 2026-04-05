@@ -56,15 +56,15 @@ export function AuditLogFilters({ actorEmail, resourceType, page }: AuditLogFilt
   const hasFilters = !!actorEmail || !!resourceType
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
       <Input
         placeholder="Search by actor…"
         value={actorInput}
         onChange={(e) => handleActorChange(e.target.value)}
-        className="h-9 w-48"
+        className="h-9 w-full sm:w-48"
       />
       <Select value={resourceType ?? "all"} onValueChange={handleResourceTypeChange}>
-        <SelectTrigger className="h-9 w-40">
+        <SelectTrigger className="h-9 w-full sm:w-40">
           <SelectValue placeholder="All resources" />
         </SelectTrigger>
         <SelectContent>

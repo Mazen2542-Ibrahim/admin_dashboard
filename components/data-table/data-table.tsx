@@ -90,7 +90,7 @@ export function DataTable<TData, TValue>({
   return (
     <div className="space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         {searchKey && (
           <Input
             placeholder={searchPlaceholder}
@@ -104,14 +104,14 @@ export function DataTable<TData, TValue>({
                 setLocalFilter(val)
               }
             }}
-            className="max-w-sm"
+            className="w-full sm:max-w-sm"
           />
         )}
-        {toolbar && <div className="flex items-center gap-2">{toolbar}</div>}
+        {toolbar && <div className="min-w-0">{toolbar}</div>}
       </div>
 
       {/* Table */}
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -172,7 +172,7 @@ export function DataTable<TData, TValue>({
 
       {/* Pagination */}
       {pagination && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
             Page {pagination.page} of {totalPages} ({pagination.total} total)
           </p>

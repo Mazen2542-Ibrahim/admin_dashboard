@@ -168,7 +168,7 @@ export function RolesList({ roles }: RolesListProps) {
       />
 
       <Dialog open={viewPermsRole !== null} onOpenChange={(open) => !open && setViewPermsRole(null)}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="w-[95vw] max-w-sm">
           <DialogHeader>
             <DialogTitle className="capitalize">{viewPermsRole?.name.replace(/_/g, " ")} — Permissions</DialogTitle>
           </DialogHeader>
