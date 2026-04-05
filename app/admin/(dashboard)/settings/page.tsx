@@ -4,6 +4,7 @@ import { SettingsForm } from "@/components/settings/settings-form"
 import { AuditLogRetentionPanel } from "@/components/settings/audit-log-retention-panel"
 import { AccountSecurityPanel } from "@/components/settings/account-security-panel"
 import { LocationRestrictionsPanel } from "@/components/settings/location-restrictions-panel"
+import { BrandingPanel } from "./_components/branding-panel"
 import {
   Card,
   CardContent,
@@ -34,6 +35,8 @@ export default async function SettingsPage() {
     lockoutDurationMinutes: 60,
     requireLocationForAuth: false,
     allowedCountries: [] as string[],
+    siteLogoUrl: null,
+    siteFaviconUrl: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   }
@@ -46,6 +49,21 @@ export default async function SettingsPage() {
           Manage authentication and registration options.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Branding</CardTitle>
+          <CardDescription>
+            Upload a logo and favicon to customise your site&apos;s appearance.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandingPanel
+            siteLogoUrl={defaultSettings.siteLogoUrl}
+            siteFaviconUrl={defaultSettings.siteFaviconUrl}
+          />
+        </CardContent>
+      </Card>
 
       {!smtpConfigured && (
         <Alert variant="warning">

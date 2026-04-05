@@ -11,9 +11,10 @@ interface AppShellProps {
   children: React.ReactNode
   permissions: string[]
   initialUser?: { id: string; name: string; email: string; image?: string | null }
+  logoUrl?: string | null
 }
 
-export function AppShell({ children, permissions, initialUser }: AppShellProps) {
+export function AppShell({ children, permissions, initialUser, logoUrl }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -46,7 +47,7 @@ export function AppShell({ children, permissions, initialUser }: AppShellProps) 
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar — always visible */}
       <div className="hidden md:flex md:flex-col md:shrink-0">
-        <Sidebar permissions={permissions} />
+        <Sidebar permissions={permissions} logoUrl={logoUrl} />
       </div>
 
       {/* Mobile sidebar — slide-in drawer */}
@@ -71,7 +72,7 @@ export function AppShell({ children, permissions, initialUser }: AppShellProps) 
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           )}
         >
-          <Sidebar permissions={permissions} onClose={() => setSidebarOpen(false)} closeButtonRef={closeButtonRef} />
+          <Sidebar permissions={permissions} logoUrl={logoUrl} onClose={() => setSidebarOpen(false)} closeButtonRef={closeButtonRef} />
         </div>
       </div>
 

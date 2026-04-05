@@ -4,12 +4,19 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { appConfig } from "@/config/app.config"
 import { ThemeProvider } from "@/components/providers/theme-provider"
+import { getAppSettings } from "@/modules/settings/queries"
 
 const inter = Inter({ subsets: ["latin"] })
 
-export const metadata: Metadata = {
-  title: appConfig.name,
-  description: appConfig.description,
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getAppSettings()
+  return {
+    title: appConfig.name,
+    description: appConfig.description,
+    icons: settings?.siteFaviconUrl
+      ? [{ rel: "icon", url: settings.siteFaviconUrl }]
+      : undefined,
+  }
 }
 
 export const viewport: Viewport = {

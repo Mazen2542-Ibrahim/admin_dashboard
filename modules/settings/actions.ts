@@ -3,8 +3,9 @@
 import { revalidatePath, revalidateTag } from "next/cache"
 import { requirePermission } from "@/lib/auth"
 import { updateSettingsSchema, updateLocationSettingsSchema } from "./schema"
-import { upsertAppSettings, upsertLocationSettings } from "./service"
+import { upsertAppSettings, upsertLocationSettings, upsertBrandingSettings } from "./service"
 import { getAppSettings } from "./queries"
+import { deleteFile } from "@/lib/storage"
 
 export async function getAppSettingsAction() {
   try {
@@ -42,6 +43,29 @@ export async function updateLocationSettingsAction(formData: unknown) {
     if (!parsed.success) return { error: parsed.error.flatten() }
 
     await upsertLocationSettings(parsed.data, actor.id, actor.email)
+    revalidatePath("/admin/settings")
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+
+export async function deleteBrandingAssetAction(type: "logo" | "favicon") {
+  try {
+    const session = await requirePermission("settings:update")
+    const actor = session.user as { id: string; email: string }
+
+    const settings = await getAppSettings()
+    const oldUrl = type === "logo" ? settings?.siteLogoUrl : settings?.siteFaviconUrl
+
+    if (oldUrl) {
+      await deleteFile(oldUrl)
+    }
+
+    const data = type === "logo" ? { siteLogoUrl: null } : { siteFaviconUrl: null }
+    await upsertBrandingSettings(data, actor.id, actor.email)
+
+    revalidateTag("app-settings")
     revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {
