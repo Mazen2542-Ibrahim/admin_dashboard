@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import { pgTable, uuid, text, timestamp, uniqueIndex, index } from "drizzle-orm/pg-core"
 import { roles } from "./roles"
 
 export const permissions = pgTable(
@@ -18,5 +18,6 @@ export const permissions = pgTable(
       table.resource,
       table.action
     ),
+    roleIdIdx: index("permissions_role_id_idx").on(table.roleId),
   })
 )

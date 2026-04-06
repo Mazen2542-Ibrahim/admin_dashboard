@@ -51,8 +51,11 @@ async function POST(req: NextRequest) {
       )
     }
 
-    // 1. Find user
-    const user = await getUserByEmail(email)
+    // 1. Find user + fetch settings in parallel (settings don't depend on user)
+    const [user, settings] = await Promise.all([
+      getUserByEmail(email),
+      getAppSettings(),
+    ])
     if (!user) return betterAuthHandler.POST(req)
 
     // 2. Check inactive
@@ -72,7 +75,6 @@ async function POST(req: NextRequest) {
     }
 
     // 3. Check email verification (if enabled)
-    const settings = await getAppSettings()
     if (settings?.emailVerificationEnabled && !user.emailVerified) {
       return NextResponse.json(
         { code: "EMAIL_NOT_VERIFIED", error: "Please verify your email before logging in." },
@@ -138,11 +140,12 @@ async function POST(req: NextRequest) {
           expiresAt,
         })
 
-        await sendTemplateEmailByName("login-otp", user.email, {
+        // Fire-and-forget: don't block the response on SMTP delivery
+        sendTemplateEmailByName("login-otp", user.email, {
           userName: user.name,
           otpCode: otp,
           appName: appConfig.name,
-        })
+        }).catch((err) => console.error("[sign-in] OTP email failed:", err))
 
         return NextResponse.json({ code: "OTP_REQUIRED" }, { status: 200 })
       }
