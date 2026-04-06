@@ -17,6 +17,7 @@ export default async function RegisterPage() {
   }
 
   const settings = await getAppSettings()
+  const displayName = settings?.siteName ?? appConfig.name
   const locationConfig = {
     requireLocationForAuth: settings?.requireLocationForAuth ?? false,
     allowedCountries: settings?.allowedCountries ?? [],
@@ -29,22 +30,22 @@ export default async function RegisterPage() {
           {settings?.siteLogoUrl ? (
             <img
               src={settings.siteLogoUrl}
-              alt={appConfig.name}
+              alt={displayName}
               className="mx-auto mb-4 h-12 w-auto object-contain"
             />
           ) : (
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground text-xl font-bold">
-              {appConfig.name.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
           )}
-          <h1 className="text-2xl font-bold">{appConfig.name}</h1>
+          <h1 className="text-2xl font-bold">{displayName}</h1>
         </div>
 
         <Card>
           <CardHeader>
             <CardTitle>Create Account</CardTitle>
             <CardDescription>
-              Register to access {appConfig.name}
+              Register to access {displayName}
             </CardDescription>
           </CardHeader>
           <CardContent>

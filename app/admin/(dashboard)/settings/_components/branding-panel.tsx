@@ -4,10 +4,13 @@ import { useRef, useState } from "react"
 import { Loader2, Upload, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import { deleteBrandingAssetAction } from "@/modules/settings/actions"
+import { deleteBrandingAssetAction, updateBrandingNameAction } from "@/modules/settings/actions"
 
 interface BrandingPanelProps {
+  siteName: string | null
   siteLogoUrl: string | null
   siteFaviconUrl: string | null
 }
@@ -162,18 +165,59 @@ function AssetCard({
   )
 }
 
-export function BrandingPanel({ siteLogoUrl, siteFaviconUrl }: BrandingPanelProps) {
+function SiteNameForm({ initialName }: { initialName: string | null }) {
+  const { toast } = useToast()
+  const [name, setName] = useState(initialName ?? "")
+  const [saving, setSaving] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    try {
+      const result = await updateBrandingNameAction({ siteName: name })
+      if ("error" in result) {
+        const msg = "message" in (result.error as object)
+          ? (result.error as { message: string }).message
+          : "Validation error"
+        toast({ title: "Save failed", description: msg, variant: "destructive" })
+        return
+      }
+      toast({ title: "Site name updated" })
+    } catch {
+      toast({ title: "Save failed", description: "Network error", variant: "destructive" })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <Label htmlFor="site-name">Site Name</Label>
+      <div className="flex gap-2">
+        <Input
+          id="site-name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="My App"
+          maxLength={100}
+          className="max-w-sm"
+        />
+        <Button type="submit" size="sm" disabled={saving || name.trim() === ""}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Displayed in the sidebar and page title.</p>
+    </form>
+  )
+}
+
+export function BrandingPanel({ siteName, siteLogoUrl, siteFaviconUrl }: BrandingPanelProps) {
   const [logoUrl, setLogoUrl] = useState(siteLogoUrl)
   const [faviconUrl, setFaviconUrl] = useState(siteFaviconUrl)
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-medium">Branding</h3>
-        <p className="text-sm text-muted-foreground">
-          Upload a logo and favicon to customise how your site looks to users.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <SiteNameForm initialName={siteName} />
 
       <div className="grid gap-4 sm:grid-cols-2">
         <AssetCard

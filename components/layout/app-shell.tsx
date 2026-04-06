@@ -12,9 +12,10 @@ interface AppShellProps {
   permissions: string[]
   initialUser?: { id: string; name: string; email: string; image?: string | null }
   logoUrl?: string | null
+  siteName?: string | null
 }
 
-export function AppShell({ children, permissions, initialUser, logoUrl }: AppShellProps) {
+export function AppShell({ children, permissions, initialUser, logoUrl, siteName }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
   const closeButtonRef = useRef<HTMLButtonElement>(null)
@@ -47,7 +48,7 @@ export function AppShell({ children, permissions, initialUser, logoUrl }: AppShe
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar — always visible */}
       <div className="hidden md:flex md:flex-col md:shrink-0">
-        <Sidebar permissions={permissions} logoUrl={logoUrl} />
+        <Sidebar permissions={permissions} logoUrl={logoUrl} siteName={siteName} />
       </div>
 
       {/* Mobile sidebar — slide-in drawer */}

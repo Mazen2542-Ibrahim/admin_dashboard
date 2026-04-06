@@ -4,18 +4,18 @@ import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
 import { appConfig } from "@/config/app.config"
 import { ThemeProvider } from "@/components/providers/theme-provider"
-import { getAppSettings } from "@/modules/settings/queries"
+import { getBrandingSettings } from "@/modules/settings/queries"
 import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getAppSettings()
+  const branding = await getBrandingSettings()
   return {
-    title: appConfig.name,
+    title: branding.siteName ?? appConfig.name,
     description: appConfig.description,
-    icons: settings?.siteFaviconUrl
-      ? [{ rel: "icon", url: settings.siteFaviconUrl }]
+    icons: branding.siteFaviconUrl
+      ? [{ rel: "icon", url: branding.siteFaviconUrl }]
       : undefined,
   }
 }

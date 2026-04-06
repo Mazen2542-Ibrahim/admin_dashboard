@@ -9,6 +9,7 @@ export type AppSettings = {
   lockoutDurationMinutes: number
   requireLocationForAuth: boolean
   allowedCountries: string[]
+  siteName: string | null
   siteLogoUrl: string | null
   siteFaviconUrl: string | null
   createdAt: Date
@@ -31,6 +32,7 @@ export type UpdateLocationSettingsInput = {
 }
 
 export type UpdateBrandingInput = {
+  siteName?: string | null
   siteLogoUrl?: string | null
   siteFaviconUrl?: string | null
 }

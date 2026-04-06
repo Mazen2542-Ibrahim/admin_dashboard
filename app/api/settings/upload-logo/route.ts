@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
   // Persist to DB
   await upsertBrandingSettings({ siteLogoUrl: url }, actor.id, actor.email)
   revalidateTag("app-settings")
+  revalidateTag("branding-settings")
 
   return NextResponse.json({ url })
 }

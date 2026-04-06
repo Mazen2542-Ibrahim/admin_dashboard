@@ -11,6 +11,7 @@ export const appSettings = pgTable("app_settings", {
   lockoutDurationMinutes: integer("lockout_duration_minutes").notNull().default(60),
   requireLocationForAuth: boolean("require_location_for_auth").notNull().default(false),
   allowedCountries: text("allowed_countries").array().notNull().default([]),
+  siteName: text("site_name"),
   siteLogoUrl: text("site_logo_url"),
   siteFaviconUrl: text("site_favicon_url"),
   createdAt: timestamp("created_at").notNull().defaultNow(),

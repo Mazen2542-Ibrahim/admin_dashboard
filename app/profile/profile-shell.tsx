@@ -12,9 +12,11 @@ interface ProfileShellProps {
   children: React.ReactNode
   permissions: string[]
   initialUser?: { id: string; name: string; email: string; image?: string | null }
+  siteName?: string | null
+  logoUrl?: string | null
 }
 
-export function ProfileShell({ children, permissions, initialUser }: ProfileShellProps) {
+export function ProfileShell({ children, permissions, initialUser, siteName, logoUrl }: ProfileShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const pathname = usePathname()
 
@@ -37,7 +39,7 @@ export function ProfileShell({ children, permissions, initialUser }: ProfileShel
     <div className="flex h-screen overflow-hidden">
       {/* Desktop sidebar — always visible */}
       <div className="hidden md:flex md:flex-col md:shrink-0">
-        <ProfileSidebar permissions={permissions} />
+        <ProfileSidebar permissions={permissions} siteName={siteName} logoUrl={logoUrl} />
       </div>
 
       {/* Mobile sidebar — slide-in drawer */}

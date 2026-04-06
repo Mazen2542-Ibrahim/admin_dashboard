@@ -12,13 +12,15 @@ import { features } from "@/config/features.config"
 interface SidebarProps {
   permissions: string[]
   logoUrl?: string | null
+  siteName?: string | null
   onClose?: () => void
   closeButtonRef?: React.RefObject<HTMLButtonElement>
 }
 
-export function Sidebar({ permissions, logoUrl, onClose, closeButtonRef }: SidebarProps) {
+export function Sidebar({ permissions, logoUrl, siteName, onClose, closeButtonRef }: SidebarProps) {
   const [logoError, setLogoError] = React.useState(false)
   const showLogo = logoUrl && !logoError
+  const displayName = siteName ?? appConfig.name
 
   return (
     <aside className="flex h-screen w-64 flex-col border-r bg-card">
@@ -28,7 +30,7 @@ export function Sidebar({ permissions, logoUrl, onClose, closeButtonRef }: Sideb
           {showLogo ? (
             <Image
               src={logoUrl}
-              alt={appConfig.name}
+              alt={displayName}
               width={28}
               height={28}
               className="h-7 w-7 rounded-md object-contain shrink-0"
@@ -36,10 +38,10 @@ export function Sidebar({ permissions, logoUrl, onClose, closeButtonRef }: Sideb
             />
           ) : (
             <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-xs font-bold shrink-0">
-              {appConfig.name.charAt(0).toUpperCase()}
+              {displayName.charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="text-sm truncate">{appConfig.name}</span>
+          <span className="text-sm truncate">{displayName}</span>
         </Link>
         {/* Close button — mobile only */}
         {onClose && (
@@ -61,7 +63,7 @@ export function Sidebar({ permissions, logoUrl, onClose, closeButtonRef }: Sideb
 
       {/* Footer */}
       <div className="p-4 text-xs text-muted-foreground shrink-0">
-        <p>{appConfig.name} v0.1.0</p>
+        <p>{displayName} v0.1.0</p>
       </div>
     </aside>
   )

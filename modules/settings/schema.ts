@@ -18,3 +18,9 @@ export const updateLocationSettingsSchema = z.object({
 })
 
 export type UpdateLocationSettingsSchema = z.infer<typeof updateLocationSettingsSchema>
+
+export const updateBrandingNameSchema = z.object({
+  siteName: z.string().trim().min(1).max(100),
+})
+
+export type UpdateBrandingNameSchema = z.infer<typeof updateBrandingNameSchema>

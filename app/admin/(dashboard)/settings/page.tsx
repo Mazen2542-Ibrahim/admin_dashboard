@@ -35,6 +35,7 @@ export default async function SettingsPage() {
     lockoutDurationMinutes: 60,
     requireLocationForAuth: false,
     allowedCountries: [] as string[],
+    siteName: null,
     siteLogoUrl: null,
     siteFaviconUrl: null,
     createdAt: new Date(),
@@ -59,6 +60,7 @@ export default async function SettingsPage() {
         </CardHeader>
         <CardContent>
           <BrandingPanel
+            siteName={defaultSettings.siteName}
             siteLogoUrl={defaultSettings.siteLogoUrl}
             siteFaviconUrl={defaultSettings.siteFaviconUrl}
           />
