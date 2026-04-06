@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { roles, permissions, users } from "@/db/schema"
 import { eq, count } from "drizzle-orm"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 import { getRoleByName } from "./queries"
 import type { CreateRoleInput, UpdateRoleInput } from "./types"
 
@@ -32,7 +32,7 @@ export async function createRole(
     )
   }
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "role.created",
@@ -87,7 +87,7 @@ export async function updateRole(
     }
   }
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "role.updated",
@@ -119,7 +119,7 @@ export async function deleteRole(
 
   await db.delete(roles).where(eq(roles.id, id))
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "role.deleted",

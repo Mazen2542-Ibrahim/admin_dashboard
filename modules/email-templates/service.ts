@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import { emailTemplates } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { sendEmail } from "@/lib/email"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 import { getTemplateByName, getTemplateById } from "./queries"
 import type { CreateEmailTemplateInput, UpdateEmailTemplateInput } from "./types"
 
@@ -34,7 +34,7 @@ export async function createTemplate(
     })
     .returning()
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "email_template.created",
@@ -75,7 +75,7 @@ export async function updateTemplate(
 
   if (!updated) throw new Error("Template not found")
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "email_template.updated",
@@ -99,7 +99,7 @@ export async function deleteTemplate(
 
   if (!deleted) throw new Error("Template not found")
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "email_template.deleted",
@@ -151,7 +151,7 @@ export async function sendTemplateEmail(
 
   await sendEmail({ to: toEmail, subject, html, text })
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "email_template.sent",

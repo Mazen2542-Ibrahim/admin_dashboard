@@ -1,6 +1,6 @@
 import { db } from "@/lib/db"
 import { appSettings } from "@/db/schema"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 import { getAppSettings } from "./queries"
 import type { UpdateSettingsInput, UpdateLocationSettingsInput, UpdateBrandingInput } from "./types"
 
@@ -35,7 +35,7 @@ export async function upsertAppSettings(
     })
   }
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "settings.updated",
@@ -65,7 +65,7 @@ export async function upsertLocationSettings(
     })
   }
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "settings.location_updated",
@@ -87,7 +87,7 @@ export async function upsertBrandingSettings(
     await db.insert(appSettings).values(data)
   }
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "settings.branding_updated",

@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { rateLimit, getIp } from "@/lib/rate-limit"
 import { getCountryFromHeaders, getCountryFromCoordinates, getCountryFromIp, isCountryAllowed } from "@/lib/geo"
 import { getAppSettings } from "@/modules/settings/queries"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivityFromRequest } from "@/lib/activity-logger"
 
 export async function POST(request: NextRequest) {
   const ip = getIp(request.headers)
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
   const allowed = !effectiveCountry || isCountryAllowed(effectiveCountry, allowedCountries)
 
   if (!allowed) {
-    await logAudit({
+    await logActivityFromRequest(request.headers, {
       action: "auth.location_blocked",
       resourceType: "auth",
       metadata: {

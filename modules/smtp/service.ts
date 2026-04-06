@@ -3,7 +3,7 @@ import { smtpSettings } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { encrypt } from "@/lib/encryption"
 import { sendEmail } from "@/lib/email"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 import { getSmtpSettingsRaw } from "./queries"
 import type { SmtpSettingsInput } from "./types"
 
@@ -43,7 +43,7 @@ export async function upsertSmtpSettings(
     })
   }
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "smtp.updated",
@@ -76,7 +76,7 @@ export async function testSmtpConnection(
     text: "SMTP Configuration Test\n\nThis is a test email from your Admin Dashboard. If you received this, your SMTP configuration is working correctly!",
   })
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "smtp.test_sent",

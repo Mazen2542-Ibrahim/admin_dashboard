@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm"
 import { makeSignature } from "better-auth/crypto"
 import { auth } from "@/lib/auth"
 import { getUserByEmail } from "@/modules/users/queries"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivityFromRequest } from "@/lib/activity-logger"
 import { rateLimit, getIp } from "@/lib/rate-limit"
 import { type NextRequest } from "next/server"
 
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "Failed to create session" }, { status: 500 })
   }
 
-  await logAudit({
+  await logActivityFromRequest(request.headers, {
     actorId: user.id,
     actorEmail: user.email,
     action: "user.signed_in_otp",

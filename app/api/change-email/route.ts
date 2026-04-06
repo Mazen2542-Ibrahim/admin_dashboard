@@ -3,7 +3,7 @@ import { db } from "@/lib/db"
 import { verifications } from "@/db/schema"
 import { eq } from "drizzle-orm"
 import { updateUser } from "@/modules/users/service"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivityFromRequest } from "@/lib/activity-logger"
 import { getUserById } from "@/modules/users/queries"
 
 export async function GET(req: NextRequest) {
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
   await updateUser(userId, { email: newEmail, emailVerified: true }, userId, user.email)
   await db.delete(verifications).where(eq(verifications.id, token))
-  await logAudit({
+  await logActivityFromRequest(req.headers, {
     actorId: userId,
     actorEmail: user.email,
     action: "user.email_changed",

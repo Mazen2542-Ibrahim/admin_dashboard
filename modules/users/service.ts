@@ -2,7 +2,7 @@ import { db } from "@/lib/db"
 import { users, accounts, sessions } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
 import { revalidateTag } from "next/cache"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 import { getUserByEmail } from "./queries"
 import type { CreateUserInput, UpdateUserInput } from "./types"
 import { hashPassword } from "better-auth/crypto"
@@ -40,7 +40,7 @@ export async function createUser(
     password: passwordHash,
   })
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "user.created",
@@ -74,7 +74,7 @@ export async function updateUser(
 
   if (!updated) throw new Error("User not found")
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "user.updated",
@@ -101,7 +101,7 @@ export async function deleteUser(
 
   if (!updated) throw new Error("User not found")
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "user.deactivated",
@@ -127,7 +127,7 @@ export async function hardDeleteUser(
 
   if (!deleted) throw new Error("User not found")
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "user.deleted",
@@ -174,7 +174,7 @@ export async function recordFailedLoginAttempt(
   if (updated.failedLoginAttempts >= maxAttempts) {
     const lockedUntil = new Date(Date.now() + lockoutDurationMinutes * 60 * 1000)
     await db.update(users).set({ lockedUntil }).where(eq(users.id, userId))
-    await logAudit({
+    await logActivity({
       action: "user.account_locked",
       resourceType: "user",
       resourceId: userId,
@@ -203,7 +203,7 @@ export async function unlockUserAccount(
 
   if (!updated) throw new Error("User not found")
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "user.account_unlocked",
@@ -226,7 +226,7 @@ export async function resetUserPassword(
     .set({ password: passwordHash })
     .where(eq(accounts.userId, userId))
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "user.password_reset",
