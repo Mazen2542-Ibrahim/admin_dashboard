@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster"
 import { appConfig } from "@/config/app.config"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { getAppSettings } from "@/modules/settings/queries"
+import { Analytics } from "@vercel/analytics/next"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -36,6 +37,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           {children}
           <Toaster />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
