@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { users, accounts, sessions } from "@/db/schema"
 import { eq, sql } from "drizzle-orm"
+import { revalidateTag } from "next/cache"
 import { logAudit } from "@/modules/audit-logs/service"
 import { getUserByEmail } from "./queries"
 import type { CreateUserInput, UpdateUserInput } from "./types"
@@ -48,6 +49,7 @@ export async function createUser(
     metadata: { email: newUser.email, role: newUser.role },
   })
 
+  revalidateTag("user-stats")
   return newUser
 }
 
@@ -81,6 +83,7 @@ export async function updateUser(
     metadata: input as Record<string, unknown>,
   })
 
+  revalidateTag("user-stats")
   return updated
 }
 
@@ -107,6 +110,7 @@ export async function deleteUser(
     metadata: { email: updated.email },
   })
 
+  revalidateTag("user-stats")
   return updated
 }
 
@@ -132,6 +136,7 @@ export async function hardDeleteUser(
     metadata: { email: deleted.email },
   })
 
+  revalidateTag("user-stats")
   return deleted
 }
 

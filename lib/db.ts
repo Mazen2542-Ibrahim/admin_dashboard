@@ -10,8 +10,8 @@ const globalForDb = globalThis as unknown as {
 const client =
   globalForDb.pgClient ??
   postgres(process.env.DATABASE_URL!, {
-    max: 10,
-    idle_timeout: 20,
+    max: 20,
+    idle_timeout: 60,
     connect_timeout: 10,
   })
 

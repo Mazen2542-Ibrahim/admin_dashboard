@@ -27,20 +27,21 @@ export async function getAllRoles(): Promise<RoleWithPermissions[]> {
 }
 
 export async function getRoleById(id: string): Promise<RoleWithPermissions | null> {
-  const [role] = await db
-    .select()
+  const rows = await db
+    .select({ role: roles, permission: permissions })
     .from(roles)
+    .leftJoin(permissions, eq(permissions.roleId, roles.id))
     .where(eq(roles.id, id))
-    .limit(1)
 
-  if (!role) return null
+  if (rows.length === 0) return null
 
-  const rolePermissions = await db
-    .select()
-    .from(permissions)
-    .where(eq(permissions.roleId, id))
-
+  const { role } = rows[0]
+  const rolePermissions = rows.flatMap(({ permission }) => (permission ? [permission] : []))
   return { ...role, permissions: rolePermissions }
+}
+
+export async function getRoleOptions() {
+  return db.select({ id: roles.id, name: roles.name }).from(roles).orderBy(roles.name)
 }
 
 export async function getRoleByName(name: string) {

@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { getUserById } from "@/modules/users/queries"
-import { getAllRoles } from "@/modules/roles/queries"
+import { getRoleOptions } from "@/modules/roles/queries"
 import { getSession } from "@/lib/auth"
 import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { UserDetailTabs } from "./user-detail-tabs"
@@ -22,16 +22,14 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
 
   const [user, allRoles, session, smtpSettings] = await Promise.all([
     getUserById(params.id),
-    getAllRoles(),
+    getRoleOptions(),
     getSession(),
     getActiveSmtpSettings(),
   ])
 
   if (!user) redirect("/admin/users")
 
-  const roles = allRoles
-    .filter((r) => r.name !== "visitor")
-    .map((r) => ({ id: r.id, name: r.name }))
+  const roles = allRoles.filter((r) => r.name !== "visitor")
   const isSelf = session?.user.id === params.id
   const currentSessionId = (session as { session?: { id?: string } } | null)?.session?.id
 

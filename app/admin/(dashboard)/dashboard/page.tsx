@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { getUserCount, getActiveUserCount, getNewUserCount, getLockedUserCount } from "@/modules/users/queries"
+import { getUserStats } from "@/modules/users/queries"
 import { getAuditLogs, getAuditLogCount } from "@/modules/audit-logs/queries"
 import { getActiveSmtpSettings } from "@/modules/smtp/queries"
 import { SmtpStatusBanner } from "@/components/dashboard/smtp-status-banner"
@@ -57,31 +57,23 @@ function formatAction(action: string) {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const today = new Date(); today.setHours(0, 0, 0, 0)
 
   const [
-    totalUsers,
-    activeUsers,
-    newUsersThisWeek,
-    newUsersToday,
-    lockedUsers,
+    userStats,
     auditEventCount,
     auditEventsToday,
     recentLogs,
     smtpSettings,
   ] = await Promise.all([
-    getUserCount(),
-    getActiveUserCount(),
-    getNewUserCount(sevenDaysAgo),
-    getNewUserCount(today),
-    getLockedUserCount(),
+    getUserStats(),
     getAuditLogCount(),
     getAuditLogCount({ dateFrom: today }),
     getAuditLogs({ limit: 8 }),
     getActiveSmtpSettings(),
   ])
 
+  const { total: totalUsers, active: activeUsers, locked: lockedUsers, newThisWeek: newUsersThisWeek, newToday: newUsersToday } = userStats
   const inactiveUsers = totalUsers - activeUsers
 
   const stats = [

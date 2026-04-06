@@ -1,6 +1,7 @@
 import { db } from "@/lib/db"
 import { users, accounts, sessions } from "@/db/schema"
-import { eq, ilike, or, count, and, gt, gte, desc } from "drizzle-orm"
+import { eq, ilike, or, count, and, gt, gte, desc, sql } from "drizzle-orm"
+import { unstable_cache } from "next/cache"
 import type { UserListFilters } from "./types"
 
 export async function getAllUsers(filters: UserListFilters = {}) {
@@ -40,7 +41,21 @@ export async function getAllUsers(filters: UserListFilters = {}) {
 
 export async function getUserById(id: string) {
   const [user] = await db
-    .select()
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      emailVerified: users.emailVerified,
+      image: users.image,
+      role: users.role,
+      isActive: users.isActive,
+      lastLoginAt: users.lastLoginAt,
+      failedLoginAttempts: users.failedLoginAttempts,
+      lockedUntil: users.lockedUntil,
+      themePreference: users.themePreference,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+    })
     .from(users)
     .where(eq(users.id, id))
     .limit(1)
@@ -111,6 +126,30 @@ export async function getLockedUserCount() {
     .where(gt(users.lockedUntil, new Date()))
   return result?.count ?? 0
 }
+
+export const getUserStats = unstable_cache(
+  async () => {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    sevenDaysAgo.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const weekParam = sql.param(sevenDaysAgo.toISOString())
+    const todayParam = sql.param(today.toISOString())
+    const [result] = await db
+      .select({
+        total: sql<number>`count(*)::int`,
+        active: sql<number>`count(*) filter (where ${users.isActive} = true)::int`,
+        locked: sql<number>`count(*) filter (where ${users.lockedUntil} > now())::int`,
+        newThisWeek: sql<number>`count(*) filter (where ${users.createdAt} >= ${weekParam}::timestamptz)::int`,
+        newToday: sql<number>`count(*) filter (where ${users.createdAt} >= ${todayParam}::timestamptz)::int`,
+      })
+      .from(users)
+    return result ?? { total: 0, active: 0, locked: 0, newThisWeek: 0, newToday: 0 }
+  },
+  ["user-stats"],
+  { revalidate: 60, tags: ["user-stats"] }
+)
 
 export async function getCredentialAccount(userId: string) {
   const [account] = await db

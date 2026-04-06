@@ -1,5 +1,5 @@
 import { getAllUsers, getUserCount } from "@/modules/users/queries"
-import { getAllRoles } from "@/modules/roles/queries"
+import { getRoleOptions } from "@/modules/roles/queries"
 import { getSession } from "@/lib/auth"
 import { UsersTableWrapper } from "./users-table-wrapper"
 import type { User } from "@/modules/users/types"
@@ -21,12 +21,10 @@ export default async function UsersPage({ searchParams }: UsersPageProps) {
     getAllUsers({ page, limit: pageSize, search, role, status }),
     getUserCount({ search, role, status }),
     getSession(),
-    getAllRoles(),
+    getRoleOptions(),
   ])
 
-  const roles = allRoles
-    .filter((r) => r.name !== "visitor")
-    .map((r) => ({ id: r.id, name: r.name }))
+  const roles = allRoles.filter((r) => r.name !== "visitor")
 
   return (
     <div className="space-y-6">
