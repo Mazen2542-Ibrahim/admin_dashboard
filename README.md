@@ -78,15 +78,27 @@ Open `http://localhost:3000` — you'll be redirected to the login page.
 
 Copy `.env.example` to `.env` and fill in every value before running.
 
+**Required**
+
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string — e.g. `postgresql://admin:password@localhost:5432/admin_db` |
 | `BETTER_AUTH_SECRET` | Secret used to sign sessions — generate with `openssl rand -base64 32` |
 | `BETTER_AUTH_URL` | Full base URL of the app — e.g. `http://localhost:3000` (no trailing slash) |
-| `ENCRYPTION_KEY` | 32-byte hex key for AES-256-GCM SMTP encryption — generate with `openssl rand -hex 32` |
-| `NEXT_PUBLIC_APP_URL` | Public-facing app URL used in client-side code |
-| `SEED_ADMIN_EMAIL` | *(optional)* Override the default super-admin email during seeding |
-| `SEED_ADMIN_PASSWORD` | *(optional)* Override the default super-admin password during seeding |
+| `ENCRYPTION_KEY` | 32-byte hex key for AES-256-GCM SMTP credential encryption — generate with `openssl rand -hex 32` |
+| `NEXT_PUBLIC_APP_URL` | Public-facing app URL used in client-side code and email links |
+
+**Optional**
+
+| Variable | Description |
+|---|---|
+| `BETTER_AUTH_TRUSTED_ORIGINS` | Comma-separated list of additional trusted origins — needed when the app is served behind a proxy or from a different domain than `BETTER_AUTH_URL` |
+| `NEXT_PUBLIC_APP_NAME` | Override the app name used in transactional emails — falls back to `appConfig.name` in `config/app.config.ts` |
+| `BLOB_READ_WRITE_TOKEN` | Vercel Blob token for storing branding assets (logo, favicon) in production — not required in development (files are saved to `public/uploads/`) |
+| `UPSTASH_REDIS_REST_URL` | Upstash Redis REST URL — when set alongside `UPSTASH_REDIS_REST_TOKEN`, enables Redis-backed rate limiting for multi-instance deployments |
+| `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis REST token — required when `UPSTASH_REDIS_REST_URL` is set |
+| `SEED_ADMIN_EMAIL` | Override the default super-admin email used during `bun db:seed` (default: `super@admin.com`) |
+| `SEED_ADMIN_PASSWORD` | Override the default super-admin password used during `bun db:seed` (default: `Admin1234!`) |
 
 ---
 
@@ -225,12 +237,219 @@ await requireRole("admin")               // Hierarchical check
 
 ## Adding a New Module
 
-1. Create `modules/<name>/` with `actions.ts`, `service.ts`, `queries.ts`, `schema.ts`, `types.ts`
-2. Add a table to `db/schema/<name>.ts` and re-export it from `db/schema/index.ts`
-3. Run `bun db:generate` then `bun db:migrate`
-4. Add a page at `app/admin/(dashboard)/<name>/page.tsx`
-5. Add a nav item to `components/layout/sidebar.tsx` guarded by a feature flag
-6. Add the feature flag to `config/features.config.ts`
+Every module lives in `modules/<name>/` and follows the same five-layer pattern. The steps below use `products` as the example name — substitute your own throughout.
+
+### 1. Scaffold the module directory
+
+```
+modules/products/
+├── types.ts      # TypeScript interfaces for domain objects
+├── schema.ts     # Zod validation schemas for Server Action inputs
+├── queries.ts    # Cached SELECT queries — pure reads, no side effects
+├── service.ts    # Business logic: DB writes + audit logging
+└── actions.ts    # Server Actions: validate → auth → call service → revalidate
+```
+
+### 2. Define TypeScript types (`types.ts`)
+
+```typescript
+// modules/products/types.ts
+
+export type Product = {
+  id: string
+  name: string
+  price: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+export type CreateProductInput = {
+  name: string
+  price: number
+}
+```
+
+### 3. Define Zod schemas (`schema.ts`)
+
+```typescript
+// modules/products/schema.ts
+import { z } from "zod"
+
+export const createProductSchema = z.object({
+  name: z.string().min(1).max(100),
+  price: z.number().positive(),
+})
+```
+
+### 4. Write queries (`queries.ts`)
+
+Queries are pure SELECTs, cached with `unstable_cache`. Never import `db` outside `modules/`.
+
+```typescript
+// modules/products/queries.ts
+import { unstable_cache } from "next/cache"
+import { db } from "@/lib/db"
+import { products } from "@/db/schema"
+
+export const getProducts = unstable_cache(
+  async () => {
+    return db.select().from(products).orderBy(products.createdAt)
+  },
+  ["products"],
+  { tags: ["products"], revalidate: 60 }
+)
+```
+
+### 5. Write the service (`service.ts`)
+
+Services write to the DB and log every mutation to the audit trail.
+
+```typescript
+// modules/products/service.ts
+import { db } from "@/lib/db"
+import { products } from "@/db/schema"
+import { logActivity } from "@/lib/activity-logger"
+import type { CreateProductInput } from "./types"
+
+export async function createProduct(
+  input: CreateProductInput,
+  actorId: string,
+  actorEmail: string
+) {
+  const [product] = await db.insert(products).values(input).returning()
+
+  await logActivity({
+    action: "products.created",
+    resourceType: "product",
+    resourceId: product.id,
+    actorId,
+    actorEmail,
+    metadata: { name: input.name },
+  })
+
+  return product
+}
+```
+
+### 6. Write Server Actions (`actions.ts`)
+
+Server Actions are the only entry point from UI. They validate input, check permissions, call the service, and revalidate the cache.
+
+```typescript
+// modules/products/actions.ts
+"use server"
+
+import { revalidatePath, revalidateTag } from "next/cache"
+import { requirePermission } from "@/lib/permissions"
+import { createProductSchema } from "./schema"
+import * as productService from "./service"
+
+export async function createProductAction(formData: unknown) {
+  try {
+    const session = await requirePermission("products:create")
+    const actor = session.user as { id: string; email: string }
+
+    const parsed = createProductSchema.safeParse(formData)
+    if (!parsed.success) return { error: parsed.error.flatten() }
+
+    await productService.createProduct(parsed.data, actor.id, actor.email)
+
+    revalidateTag("products")
+    revalidatePath("/admin/products")
+    return { success: true }
+  } catch (err) {
+    return { error: { message: (err as Error).message } }
+  }
+}
+```
+
+### 7. Add the database schema
+
+Create a Drizzle table definition and re-export it from the central schema index.
+
+```typescript
+// db/schema/products.ts
+import { pgTable, uuid, text, integer, timestamp } from "drizzle-orm/pg-core"
+
+export const products = pgTable("products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(),
+  price: integer("price").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
+})
+```
+
+Then add one line to `db/schema/index.ts`:
+
+```typescript
+export * from "./products"
+```
+
+### 8. Generate and apply the migration
+
+```bash
+bun db:generate   # diffs schema → creates a new SQL file in db/migrations/
+bun db:migrate    # applies all pending migrations
+```
+
+Never delete files from `db/migrations/` — they are the authoritative history of the schema.
+
+### 9. Create the page
+
+Add a Server Component page. Call queries here and pass data down as props — never call `db` directly in `app/`.
+
+```typescript
+// app/admin/(dashboard)/products/page.tsx
+import { getProducts } from "@/modules/products/queries"
+import { ProductsTable } from "@/modules/products/components/products-table"
+
+export default async function ProductsPage() {
+  const products = await getProducts()
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-4">Products</h1>
+      <ProductsTable data={products} />
+    </div>
+  )
+}
+```
+
+### 10. Register the feature flag
+
+Add your module key to `config/features.config.ts`:
+
+```typescript
+export const features = {
+  smtp: true,
+  emailTemplates: true,
+  auditLogs: true,
+  roles: true,
+  registration: true,
+  settings: true,
+  products: true,   // ← add this
+}
+```
+
+Setting it to `false` removes the nav item and makes the route unreachable without any other changes.
+
+### 11. Add the nav item
+
+Open `components/layout/sidebar-nav.tsx` and add an entry to the relevant `NAV_GROUPS` group. Both `featureKey` and `permission` are checked automatically — if either fails the item is hidden.
+
+```typescript
+import { Package } from "lucide-react"
+
+// inside NAV_GROUPS, in the appropriate group:
+{ href: "/admin/products", label: "Products", icon: Package, featureKey: "products", permission: "products:read" }
+```
+
+### 12. Register permissions
+
+Add the new permission strings (`products:read`, `products:create`, `products:update`, `products:delete`) to the roles that should have access. You can do this through the Roles page in the dashboard, or by seeding them in `db/seeds/` so they ship with the project.
 
 ---
 
