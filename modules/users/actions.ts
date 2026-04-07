@@ -27,7 +27,6 @@ import { getUserByEmail, getUserById, getActiveSessionsByUserId, getCredentialAc
 import { db } from "@/lib/db"
 import { verifications, users } from "@/db/schema"
 import { eq } from "drizzle-orm"
-import { logAudit } from "@/modules/audit-logs/service"
 import { logActivity } from "@/lib/activity-logger"
 import { auth } from "@/lib/auth"
 
@@ -198,7 +197,7 @@ export async function sendWelcomeEmailAction(email: string, name: string): Promi
   })
 
   const user = await getUserByEmail(email)
-  await logAudit({
+  await logActivity({
     actorId: user?.id,
     actorEmail: email,
     action: "user.registered",
@@ -247,7 +246,7 @@ export async function requestEmailChangeAction(newEmail: string, currentPassword
       appName: process.env.NEXT_PUBLIC_APP_NAME ?? appConfig.name,
     })
 
-    await logAudit({
+    await logActivity({
       actorId: actor.id,
       actorEmail: actor.email,
       action: "user.email_change_requested",
@@ -325,7 +324,7 @@ export async function revokeUserSessionAction(sessionId: string, userId: string)
     if (!idParsed.success) return { error: { message: "Invalid user ID" } }
 
     await deleteSessionById(sessionId, userId)
-    await logAudit({
+    await logActivity({
       actorId: actor.id,
       actorEmail: actor.email,
       action: "user.session_revoked",
@@ -349,7 +348,7 @@ export async function revokeAllUserSessionsAction(userId: string) {
     if (!idParsed.success) return { error: { message: "Invalid user ID" } }
 
     await deleteAllSessionsByUserId(userId)
-    await logAudit({
+    await logActivity({
       actorId: actor.id,
       actorEmail: actor.email,
       action: "user.sessions_revoked_all",
@@ -382,7 +381,7 @@ export async function sendPasswordResetEmailAction(userId: string) {
       },
       headers: await headers(),
     })
-    await logAudit({
+    await logActivity({
       actorId: actor.id,
       actorEmail: actor.email,
       action: "user.password_reset_email_sent",
@@ -423,7 +422,7 @@ export async function sendVerificationEmailAdminAction(userId: string) {
       verificationUrl: url,
       appName: appConfig.name,
     })
-    await logAudit({
+    await logActivity({
       actorId: actor.id,
       actorEmail: actor.email,
       action: "user.verification_email_sent_by_admin",

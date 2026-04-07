@@ -8,7 +8,7 @@ import { canAccess } from "@/lib/utils"
 import { appConfig } from "@/config/app.config"
 import { sendTemplateEmailByName } from "@/modules/email-templates/service"
 import { getAppSettings } from "@/modules/settings/queries"
-import { logAudit } from "@/modules/audit-logs/service"
+import { logActivity } from "@/lib/activity-logger"
 
 export const auth = betterAuth({
   advanced: {
@@ -35,7 +35,7 @@ export const auth = betterAuth({
         verificationUrl: url,
         appName: appConfig.name,
       })
-      await logAudit({
+      await logActivity({
         actorId: user.id,
         actorEmail: user.email,
         action: "user.verification_email_sent",
@@ -52,7 +52,7 @@ export const auth = betterAuth({
         resetUrl: url,
         appName: appConfig.name,
       })
-      await logAudit({
+      await logActivity({
         actorId: user.id,
         actorEmail: user.email,
         action: "user.password_reset_requested",
@@ -75,7 +75,7 @@ export const auth = betterAuth({
           verificationUrl: url,
           appName: appConfig.name,
         })
-        await logAudit({
+        await logActivity({
           actorId: user.id,
           actorEmail: user.email,
           action: "user.email_change_verification_sent",

@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { auditLogs } from "@/db/schema"
 import type { LogAuditInput } from "./types"
 import { deleteAuditLogsOlderThan } from "./queries"
+import { logActivity } from "@/lib/activity-logger"
 
 export async function purgeAuditLogs(
   retentionDays: number,
@@ -13,7 +14,7 @@ export async function purgeAuditLogs(
 
   const deletedCount = await deleteAuditLogsOlderThan(cutoffDate)
 
-  await logAudit({
+  await logActivity({
     actorId,
     actorEmail,
     action: "audit_logs.purged",
