@@ -24,6 +24,7 @@ import { Label } from "@/components/ui/label"
 import type { AppSettings } from "@/modules/settings/types"
 
 const RETENTION_OPTIONS = [
+  { label: "7 days", value: "7" },
   { label: "30 days", value: "30" },
   { label: "60 days", value: "60" },
   { label: "90 days", value: "90" },
