@@ -444,9 +444,8 @@ function ChangeEmailSection({
         </div>
         <div className="space-y-1">
           <Label htmlFor="emailCurrentPassword">Current Password</Label>
-          <Input
+          <PasswordInput
             id="emailCurrentPassword"
-            type="password"
             autoComplete="current-password"
             {...form.register("currentPassword")}
           />
