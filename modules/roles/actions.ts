@@ -1,7 +1,8 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import { requirePermission } from "@/lib/auth"
+import { getActionErrorMessage } from "@/lib/action-error"
 import { createRoleSchema, updateRoleSchema, roleIdSchema } from "./schema"
 import { createRole, updateRole, deleteRole } from "./service"
 
@@ -15,9 +16,10 @@ export async function createRoleAction(formData: unknown) {
 
     const role = await createRole(parsed.data, actor.id, actor.email)
     revalidatePath("/admin/roles")
+    revalidateTag("user-permissions")
     return { success: true, data: { id: role.id } }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -34,9 +36,10 @@ export async function updateRoleAction(id: string, formData: unknown) {
 
     await updateRole(id, parsed.data, actor.id, actor.email)
     revalidatePath("/admin/roles")
+    revalidateTag("user-permissions")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -50,8 +53,9 @@ export async function deleteRoleAction(id: string) {
 
     await deleteRole(id, actor.id, actor.email)
     revalidatePath("/admin/roles")
+    revalidateTag("user-permissions")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }

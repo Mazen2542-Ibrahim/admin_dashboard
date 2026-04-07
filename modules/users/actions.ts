@@ -1,7 +1,8 @@
 "use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidatePath, revalidateTag } from "next/cache"
 import { requireRole, requirePermission, getSession } from "@/lib/auth"
+import { getActionErrorMessage } from "@/lib/action-error"
 import { z } from "zod"
 import { sendTemplateEmailByName } from "@/modules/email-templates/service"
 import { appConfig } from "@/config/app.config"
@@ -30,26 +31,34 @@ import { eq } from "drizzle-orm"
 import { logActivity } from "@/lib/activity-logger"
 import { auth } from "@/lib/auth"
 
+const ROLE_RANK: Record<string, number> = { user: 0, admin: 1, super_admin: 2 }
+
 export async function createUserAction(formData: unknown) {
   try {
     const session = await requirePermission("users:create")
-    const actor = session.user as { id: string; email: string }
+    const actor = session.user as { id: string; email: string; role: string }
 
     const parsed = createUserSchema.safeParse(formData)
     if (!parsed.success) return { error: parsed.error.flatten() }
+
+    const actorRank = ROLE_RANK[actor.role ?? "user"] ?? 0
+    const targetRank = ROLE_RANK[parsed.data.role ?? "user"] ?? 0
+    if (targetRank > actorRank) {
+      return { error: { message: "You cannot assign a role higher than your own" } }
+    }
 
     const user = await createUser(parsed.data, actor.id, actor.email)
     revalidatePath("/admin/users")
     return { success: true, data: { id: user.id } }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
 export async function updateUserAction(id: string, formData: unknown) {
   try {
     const session = await requirePermission("users:update")
-    const actor = session.user as { id: string; email: string }
+    const actor = session.user as { id: string; email: string; role: string }
 
     const idParsed = userIdSchema.safeParse(id)
     if (!idParsed.success) return { error: { message: "Invalid user ID" } }
@@ -66,12 +75,21 @@ export async function updateUserAction(id: string, formData: unknown) {
       }
     }
 
+    if (parsed.data.role !== undefined) {
+      const actorRank = ROLE_RANK[actor.role ?? "user"] ?? 0
+      const targetRank = ROLE_RANK[parsed.data.role] ?? 0
+      if (targetRank > actorRank) {
+        return { error: { message: "You cannot assign a role higher than your own" } }
+      }
+    }
+
     await updateUser(id, parsed.data, actor.id, actor.email)
     revalidatePath("/admin/users")
     revalidatePath(`/admin/users/${id}`)
+    revalidateTag("user-permissions")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -91,7 +109,7 @@ export async function deleteUserAction(id: string) {
     revalidatePath("/admin/users")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -112,7 +130,7 @@ export async function hardDeleteUserAction(id: string) {
     revalidatePath("/admin/users")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -128,7 +146,7 @@ export async function reactivateUserAction(id: string) {
     revalidatePath("/admin/users")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -150,7 +168,7 @@ export async function updateProfileAction(formData: unknown) {
     revalidatePath("/profile")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -248,7 +266,7 @@ export async function requestEmailChangeAction(newEmail: string, currentPassword
 
     return { success: true, pendingEmail: emailParsed.data }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -287,7 +305,7 @@ export async function resetPasswordAction(formData: unknown) {
     )
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -299,7 +317,7 @@ export async function getUserSessionsAction(userId: string) {
     const data = await getActiveSessionsByUserId(userId)
     return { success: true, data }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -326,7 +344,7 @@ export async function revokeUserSessionAction(sessionId: string, userId: string)
     revalidatePath(`/admin/users/${userId}`)
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -349,7 +367,7 @@ export async function revokeAllUserSessionsAction(userId: string) {
     revalidatePath(`/admin/users/${userId}`)
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -382,7 +400,7 @@ export async function sendPasswordResetEmailAction(userId: string) {
     })
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -423,7 +441,7 @@ export async function sendVerificationEmailAdminAction(userId: string) {
     })
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -435,7 +453,7 @@ export async function unlockUserAccountAction(userId: string) {
     revalidatePath(`/admin/users/${userId}`)
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -449,7 +467,7 @@ export async function updateThemeAction(theme: string): Promise<{ success?: bool
     await updateUser(user.id, { themePreference: parsed.data }, user.id, user.email)
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -465,6 +483,6 @@ export async function markEmailVerifiedAction(userId: string) {
     revalidatePath(`/admin/users/${userId}`)
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }

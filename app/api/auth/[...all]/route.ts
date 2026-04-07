@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { toNextJsHandler } from "better-auth/next-js"
-import { verifyPassword } from "better-auth/crypto"
+import { verifyPassword, hashPassword } from "better-auth/crypto"
 import { getUserByEmail, getAccountByUserId } from "@/modules/users/queries"
 import { recordFailedLoginAttempt, clearFailedLoginAttempts } from "@/modules/users/service"
 import { getAppSettings } from "@/modules/settings/queries"
@@ -126,8 +126,9 @@ async function POST(req: NextRequest) {
       }
 
       if (settings.emailOtpEnabled) {
-        // Generate 6-digit OTP, store in verifications table
+        // Generate 6-digit OTP, hash before storage
         const otp = String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000)
+        const otpHash = await hashPassword(otp)
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
         const identifier = `otp-login-${user.id}`
 
@@ -136,7 +137,7 @@ async function POST(req: NextRequest) {
         await db.insert(verifications).values({
           id: crypto.randomUUID(),
           identifier,
-          value: otp,
+          value: otpHash,
           expiresAt,
         })
 

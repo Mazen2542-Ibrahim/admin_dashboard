@@ -2,6 +2,7 @@
 
 import { revalidatePath, revalidateTag } from "next/cache"
 import { requirePermission } from "@/lib/auth"
+import { getActionErrorMessage } from "@/lib/action-error"
 import { updateSettingsSchema, updateLocationSettingsSchema, updateBrandingNameSchema } from "./schema"
 import { upsertAppSettings, upsertLocationSettings, upsertBrandingSettings } from "./service"
 import { getAppSettings } from "./queries"
@@ -13,7 +14,7 @@ export async function getAppSettingsAction() {
     const settings = await getAppSettings()
     return { success: true, data: settings }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -30,7 +31,7 @@ export async function updateAppSettingsAction(formData: unknown) {
     revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -46,7 +47,7 @@ export async function updateLocationSettingsAction(formData: unknown) {
     revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -64,7 +65,7 @@ export async function updateBrandingNameAction(formData: unknown) {
     revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -88,6 +89,6 @@ export async function deleteBrandingAssetAction(type: "logo" | "favicon") {
     revalidatePath("/admin/settings")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }

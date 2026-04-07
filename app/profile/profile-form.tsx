@@ -415,7 +415,7 @@ function ChangeEmailSection({
       toast({ title: "Error", description: String(msg), variant: "destructive" })
       return
     }
-    if (result.success && result.pendingEmail) {
+    if ("pendingEmail" in result && result.pendingEmail) {
       setPendingEmail(result.pendingEmail)
     }
   }

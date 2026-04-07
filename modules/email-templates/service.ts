@@ -20,7 +20,7 @@ export async function createTemplate(
   actorEmail?: string
 ) {
   const existing = await getTemplateByName(input.name)
-  if (existing) throw new Error("A template with this name already exists")
+  if (existing) throw new Error("ActionError: A template with this name already exists")
 
   const [template] = await db
     .insert(emailTemplates)
@@ -55,7 +55,7 @@ export async function updateTemplate(
   if (input.name) {
     const existing = await getTemplateByName(input.name)
     if (existing && existing.id !== id) {
-      throw new Error("A template with this name already exists")
+      throw new Error("ActionError: A template with this name already exists")
     }
   }
 
@@ -73,7 +73,7 @@ export async function updateTemplate(
     .where(eq(emailTemplates.id, id))
     .returning()
 
-  if (!updated) throw new Error("Template not found")
+  if (!updated) throw new Error("ActionError: Template not found")
 
   await logActivity({
     actorId,
@@ -97,7 +97,7 @@ export async function deleteTemplate(
     .where(eq(emailTemplates.id, id))
     .returning()
 
-  if (!deleted) throw new Error("Template not found")
+  if (!deleted) throw new Error("ActionError: Template not found")
 
   await logActivity({
     actorId,
@@ -142,8 +142,8 @@ export async function sendTemplateEmail(
   actorEmail?: string
 ) {
   const template = await getTemplateById(templateId)
-  if (!template) throw new Error("Template not found")
-  if (!template.isActive) throw new Error("Template is not active")
+  if (!template) throw new Error("ActionError: Template not found")
+  if (!template.isActive) throw new Error("ActionError: Template is not active")
 
   const subject = interpolate(template.subject, variables)
   const html = interpolate(template.htmlBody, variables)

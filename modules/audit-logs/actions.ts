@@ -2,6 +2,7 @@
 
 import { requirePermission } from "@/lib/auth"
 import { revalidatePath } from "next/cache"
+import { getActionErrorMessage } from "@/lib/action-error"
 import { auditLogFilterSchema } from "./schema"
 import { getAuditLogs, getAuditLogCount } from "./queries"
 import { purgeAuditLogs } from "./service"
@@ -29,7 +30,7 @@ export async function purgeAuditLogsAction() {
 
     return { success: true, deletedCount, cutoffDate }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -47,6 +48,6 @@ export async function getAuditLogsAction(filters: unknown) {
 
     return { success: true, data: { logs, total } }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }

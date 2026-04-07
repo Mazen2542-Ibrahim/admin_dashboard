@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { requirePermission } from "@/lib/auth"
+import { getActionErrorMessage } from "@/lib/action-error"
 import {
   createTemplateSchema,
   updateTemplateSchema,
@@ -27,7 +28,7 @@ export async function createTemplateAction(formData: unknown) {
     revalidatePath("/admin/email-templates")
     return { success: true, data: { id: template.id } }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -46,7 +47,7 @@ export async function updateTemplateAction(id: string, formData: unknown) {
     revalidatePath("/admin/email-templates")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -62,7 +63,7 @@ export async function deleteTemplateAction(id: string) {
     revalidatePath("/admin/email-templates")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -83,6 +84,6 @@ export async function sendTemplateEmailAction(formData: unknown) {
     )
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }

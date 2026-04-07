@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { requirePermission } from "@/lib/auth"
+import { getActionErrorMessage } from "@/lib/action-error"
 import { rateLimit } from "@/lib/rate-limit"
 import { smtpSettingsSchema, testSmtpSchema } from "./schema"
 import { upsertSmtpSettings, testSmtpConnection } from "./service"
@@ -18,7 +19,7 @@ export async function saveSmtpSettingsAction(formData: unknown) {
     revalidatePath("/admin/smtp")
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }
 
@@ -44,6 +45,6 @@ export async function testSmtpAction(formData: unknown) {
     await testSmtpConnection(parsed.data.toEmail, actor.id, actor.email)
     return { success: true }
   } catch (err) {
-    return { error: { message: (err as Error).message } }
+    return { error: { message: getActionErrorMessage(err) } }
   }
 }

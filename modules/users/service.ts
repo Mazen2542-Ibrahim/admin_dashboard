@@ -17,7 +17,7 @@ export async function createUser(
     hashPassword(input.password),
   ])
   if (existing) {
-    throw new Error("A user with this email already exists")
+    throw new Error("ActionError: A user with this email already exists")
   }
 
   const [newUser] = await db
@@ -62,7 +62,7 @@ export async function updateUser(
   if (input.email) {
     const existing = await getUserByEmail(input.email)
     if (existing && existing.id !== id) {
-      throw new Error("A user with this email already exists")
+      throw new Error("ActionError: A user with this email already exists")
     }
   }
 
@@ -72,7 +72,7 @@ export async function updateUser(
     .where(eq(users.id, id))
     .returning()
 
-  if (!updated) throw new Error("User not found")
+  if (!updated) throw new Error("ActionError: User not found")
 
   await logActivity({
     actorId,
@@ -99,7 +99,7 @@ export async function deleteUser(
     .where(eq(users.id, id))
     .returning()
 
-  if (!updated) throw new Error("User not found")
+  if (!updated) throw new Error("ActionError: User not found")
 
   await logActivity({
     actorId,
@@ -125,7 +125,7 @@ export async function hardDeleteUser(
     .where(eq(users.id, id))
     .returning()
 
-  if (!deleted) throw new Error("User not found")
+  if (!deleted) throw new Error("ActionError: User not found")
 
   await logActivity({
     actorId,
@@ -150,7 +150,7 @@ export async function deleteSessionById(sessionId: string, expectedUserId: strin
     .from(sessions)
     .where(eq(sessions.id, sessionId))
     .limit(1)
-  if (!session || session.userId !== expectedUserId) throw new Error("Session not found")
+  if (!session || session.userId !== expectedUserId) throw new Error("ActionError: Session not found")
   await db.delete(sessions).where(eq(sessions.id, sessionId))
 }
 
@@ -201,7 +201,7 @@ export async function unlockUserAccount(
     .where(eq(users.id, userId))
     .returning({ email: users.email })
 
-  if (!updated) throw new Error("User not found")
+  if (!updated) throw new Error("ActionError: User not found")
 
   await logActivity({
     actorId,
@@ -225,6 +225,8 @@ export async function resetUserPassword(
     .update(accounts)
     .set({ password: passwordHash })
     .where(eq(accounts.userId, userId))
+
+  await deleteAllSessionsByUserId(userId)
 
   await logActivity({
     actorId,

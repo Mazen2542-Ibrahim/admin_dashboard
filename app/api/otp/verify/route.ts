@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { verifications } from "@/db/schema"
 import { eq } from "drizzle-orm"
-import { makeSignature } from "better-auth/crypto"
+import { makeSignature, verifyPassword } from "better-auth/crypto"
 import { auth } from "@/lib/auth"
 import { getUserByEmail } from "@/modules/users/queries"
 import { logActivityFromRequest } from "@/lib/activity-logger"
@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
     .where(eq(verifications.identifier, identifier))
     .limit(1)
 
-  if (!record || record.value !== otp || record.expiresAt < new Date()) {
+  const otpValid = record && record.expiresAt >= new Date() && await verifyPassword({ hash: record.value, password: otp })
+  if (!otpValid) {
     return Response.json({ error: "Invalid or expired OTP" }, { status: 401 })
   }
 

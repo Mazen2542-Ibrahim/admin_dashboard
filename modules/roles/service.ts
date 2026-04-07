@@ -11,7 +11,7 @@ export async function createRole(
   actorEmail?: string
 ) {
   const existing = await getRoleByName(input.name)
-  if (existing) throw new Error("A role with this name already exists")
+  if (existing) throw new Error("ActionError: A role with this name already exists")
 
   const [newRole] = await db
     .insert(roles)
@@ -51,19 +51,19 @@ export async function updateRole(
   actorEmail?: string
 ) {
   const [existing] = await db.select().from(roles).where(eq(roles.id, id)).limit(1)
-  if (!existing) throw new Error("Role not found")
+  if (!existing) throw new Error("ActionError: Role not found")
 
   if (existing.name === "super_admin") {
-    throw new Error("The super_admin role is immutable and cannot be modified")
+    throw new Error("ActionError: The super_admin role is immutable and cannot be modified")
   }
 
   if (existing.isSystem && input.name && input.name !== existing.name) {
-    throw new Error("System role names cannot be changed")
+    throw new Error("ActionError: System role names cannot be changed")
   }
 
   if (input.name && input.name !== existing.name) {
     const nameConflict = await getRoleByName(input.name)
-    if (nameConflict) throw new Error("A role with this name already exists")
+    if (nameConflict) throw new Error("ActionError: A role with this name already exists")
   }
 
   const updateData: Partial<{ name: string; description: string | null }> = {}
@@ -103,8 +103,8 @@ export async function deleteRole(
   actorEmail?: string
 ) {
   const [existing] = await db.select().from(roles).where(eq(roles.id, id)).limit(1)
-  if (!existing) throw new Error("Role not found")
-  if (existing.isSystem) throw new Error("System roles cannot be deleted")
+  if (!existing) throw new Error("ActionError: Role not found")
+  if (existing.isSystem) throw new Error("ActionError: System roles cannot be deleted")
 
   const [{ value: userCount }] = await db
     .select({ value: count() })
@@ -113,7 +113,7 @@ export async function deleteRole(
 
   if (userCount > 0) {
     throw new Error(
-      `This role is assigned to ${userCount} user${userCount === 1 ? "" : "s"} and cannot be deleted`
+      `ActionError: This role is assigned to ${userCount} user${userCount === 1 ? "" : "s"} and cannot be deleted`
     )
   }
 

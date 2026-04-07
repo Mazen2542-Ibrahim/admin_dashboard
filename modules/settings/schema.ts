@@ -4,7 +4,7 @@ export const updateSettingsSchema = z.object({
   emailVerificationEnabled: z.boolean(),
   registrationEnabled: z.boolean(),
   emailOtpEnabled: z.boolean(),
-  auditLogRetentionDays: z.number().int().positive().nullable(),
+  auditLogRetentionDays: z.number().int().positive().max(36500).nullable(),
   lockoutEnabled: z.boolean(),
   maxFailedAttempts: z.number().int().min(1).max(100),
   lockoutDurationMinutes: z.number().int().min(1),
