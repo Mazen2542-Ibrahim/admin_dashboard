@@ -154,23 +154,14 @@ export async function updateProfileAction(formData: unknown) {
   }
 }
 
-/** Called client-side after a successful sign-in to write an audit entry */
+/** Called client-side after a successful sign-in to update last-login timestamp and location fields. */
 export async function logSignInAction(
   email: string,
   location?: { country?: string; latitude?: number; longitude?: number }
 ): Promise<void> {
   try {
-    // Use the email passed directly from the form — avoids session cache timing issues
     const user = await getUserByEmail(email)
     if (!user) return
-    await logActivity({
-      actorId: user.id,
-      actorEmail: user.email,
-      action: "user.signed_in",
-      resourceType: "user",
-      resourceId: user.id,
-      metadata: location ? { country: location.country, latitude: location.latitude, longitude: location.longitude } : undefined,
-    })
     await updateLastLoginAt(user.id).catch(() => {})
     if (location?.country || location?.latitude != null) {
       await db
@@ -184,7 +175,7 @@ export async function logSignInAction(
         .catch(() => {})
     }
   } catch {
-    // Never throw — sign-in must not fail because of audit logging
+    // Never throw
   }
 }
 

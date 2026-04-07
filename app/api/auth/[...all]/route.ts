@@ -150,6 +150,19 @@ async function POST(req: NextRequest) {
         return NextResponse.json({ code: "OTP_REQUIRED" }, { status: 200 })
       }
     }
+
+    // All guards passed — delegate to better-auth and log success server-side
+    const response = await betterAuthHandler.POST(req)
+    if (response.status === 200) {
+      logActivityFromRequest(req.headers, {
+        action: "user.signed_in",
+        resourceType: "user",
+        actorId: user.id,
+        actorEmail: user.email,
+        resourceId: user.id,
+      }).catch(() => {})
+    }
+    return response
   }
 
   // Registration guard
