@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import Link from "next/link"
-import { logSignInAction } from "@/modules/users/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -183,11 +182,15 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    // Use location from checkLocation() return value — not from state (setState is async)
-    await logSignInAction(values.email, {
-      country: location.country,
-      latitude: location.latitude,
-      longitude: location.longitude,
+    await fetch("/api/auth/update-location", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        country: location.country,
+        latitude: location.latitude,
+        longitude: location.longitude,
+      }),
     }).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
@@ -224,10 +227,15 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    await logSignInAction(emailForOtp, {
-      country: detectedCountry,
-      latitude: detectedCoords?.latitude ?? null,
-      longitude: detectedCoords?.longitude ?? null,
+    await fetch("/api/auth/update-location", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        country: detectedCountry,
+        latitude: detectedCoords?.latitude ?? null,
+        longitude: detectedCoords?.longitude ?? null,
+      }),
     }).catch(() => {})
     router.push(callbackUrl)
     router.refresh()

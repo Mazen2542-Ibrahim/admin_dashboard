@@ -19,7 +19,6 @@ import {
   deleteUser,
   hardDeleteUser,
   resetUserPassword,
-  updateLastLoginAt,
   deleteSessionById,
   deleteAllSessionsByUserId,
   unlockUserAccount,
@@ -169,28 +168,6 @@ export async function updateProfileAction(formData: unknown) {
     return { success: true }
   } catch (err) {
     return { error: { message: getActionErrorMessage(err) } }
-  }
-}
-
-/** Called client-side after a successful sign-in to persist location fields.
- *  lastLoginAt is handled server-side by databaseHooks.session.create.after. */
-export async function logSignInAction(
-  email: string,
-  location: { country: string | null; latitude: number | null; longitude: number | null }
-): Promise<void> {
-  try {
-    const user = await getUserByEmail(email)
-    if (!user) return
-    await db
-      .update(users)
-      .set({
-        lastLoginCountry: location.country,
-        lastLoginLatitude: location.latitude,
-        lastLoginLongitude: location.longitude,
-      })
-      .where(eq(users.id, user.id))
-  } catch {
-    // Never throw from a sign-in flow
   }
 }
 
