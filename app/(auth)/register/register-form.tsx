@@ -65,7 +65,7 @@ export function RegisterForm({ locationConfig, emailVerificationEnabled }: Regis
       return false
     }
 
-    let coords: { latitude: number; longitude: number }
+    let coords: { latitude: number; longitude: number } | null = null
     try {
       const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
         navigator.geolocation.getCurrentPosition(resolve, reject, {
@@ -75,16 +75,21 @@ export function RegisterForm({ locationConfig, emailVerificationEnabled }: Regis
         })
       })
       coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
-    } catch {
-      setGeoState("denied")
-      return false
+    } catch (err) {
+      const geoError = err as GeolocationPositionError
+      if (geoError?.code === 1) {
+        // PERMISSION_DENIED — user explicitly blocked location access
+        setGeoState("denied")
+        return false
+      }
+      // POSITION_UNAVAILABLE or TIMEOUT — fall through to IP-based check
     }
 
     try {
       const res = await fetch("/api/auth/location-check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(coords),
+        body: JSON.stringify(coords ?? {}),
       })
       const data = (await res.json()) as { allowed: boolean }
       if (data.allowed) {

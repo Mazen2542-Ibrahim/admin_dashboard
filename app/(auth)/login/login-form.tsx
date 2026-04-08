@@ -52,15 +52,6 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
   const [detectedCountry, setDetectedCountry] = React.useState<string | null>(null)
   const [detectedCoords, setDetectedCoords] = React.useState<{ latitude: number; longitude: number } | null>(null)
 
-  // Start location check eagerly on mount so it's done (or nearly done) by the time
-  // the user fills in their credentials and clicks submit.
-  React.useEffect(() => {
-    if (locationConfig.requireLocationForAuth) {
-      checkLocation().catch(() => {})
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [locationConfig.requireLocationForAuth])
-
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
