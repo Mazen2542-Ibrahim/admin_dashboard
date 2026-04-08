@@ -21,15 +21,10 @@ export async function POST(request: NextRequest) {
   const { latitude, longitude } = body
 
   const settings = await getAppSettings()
-  if (!settings?.requireLocationForAuth) {
-    return NextResponse.json({ allowed: true })
-  }
+  const requireLocation = settings?.requireLocationForAuth ?? false
+  const allowedCountries = settings?.allowedCountries ?? []
 
-  const { allowedCountries } = settings
-
-  // Resolve country: GPS coordinates first, fall back to server-side IP/CDN.
-  // Coords may be absent when the device can't determine position (no GPS hardware);
-  // in that case skip reverse-geocoding and rely on IP/CDN detection only.
+  // Always resolve country — needed for recording even when restriction is off
   const [coordCountry, serverCountry] = await Promise.all([
     latitude != null && longitude != null
       ? getCountryFromCoordinates(latitude, longitude)
@@ -39,23 +34,21 @@ export async function POST(request: NextRequest) {
     ),
   ])
 
-  // GPS-resolved country takes precedence; IP is the fallback
   const effectiveCountry = coordCountry ?? serverCountry
 
-  // If country can't be determined at all (geocoding + IP both failed),
-  // allow through — the user already proved presence by granting GPS access.
+  if (!requireLocation) {
+    // Restriction not enforced — always allow, but return country for recording
+    return NextResponse.json({ allowed: true, country: effectiveCountry })
+  }
+
+  // Enforce country allowlist
   const allowed = !effectiveCountry || isCountryAllowed(effectiveCountry, allowedCountries)
 
   if (!allowed) {
     await logActivityFromRequest(request.headers, {
       action: "auth.location_blocked",
       resourceType: "auth",
-      metadata: {
-        ip,
-        coordCountry,
-        serverCountry,
-        allowedCountries,
-      },
+      metadata: { ip, coordCountry, serverCountry, allowedCountries },
     }).catch(() => {})
   }
 

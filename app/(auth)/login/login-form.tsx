@@ -67,10 +67,10 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
     | { ok: true; country: string | null; latitude: number | null; longitude: number | null }
 
   async function checkLocation(): Promise<LocationResult> {
-    // GPS prompt + access blocking — only when requireLocationForAuth is on
     let coords: { latitude: number; longitude: number } | null = null
 
     if (locationConfig.requireLocationForAuth) {
+      // GPS is mandatory — coordinates are required, any failure blocks login
       setGeoState("requesting")
 
       if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -82,24 +82,19 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             timeout: 8000,
-            maximumAge: 300000,
-            enableHighAccuracy: false,
+            maximumAge: 0,          // never use a cached position
+            enableHighAccuracy: true,
           })
         })
         coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
-      } catch (err) {
-        const geoError = err as GeolocationPositionError
-        if (geoError?.code === 1) {
-          // PERMISSION_DENIED — user explicitly blocked location access
-          setGeoState("denied")
-          return { ok: false }
-        }
-        // POSITION_UNAVAILABLE (2) or TIMEOUT (3) — fall through to IP-based check
+      } catch {
+        // Any GPS failure (PERMISSION_DENIED, POSITION_UNAVAILABLE, TIMEOUT) blocks login
+        setGeoState("denied")
+        return { ok: false }
       }
     }
+    // When requireLocationForAuth is off: no GPS prompt, just IP-based country capture
 
-    // Always call location-check: enforces country restrictions when required,
-    // and captures IP-based country/coords for the user record even when not required
     try {
       const res = await fetch("/api/auth/location-check", {
         method: "POST",
@@ -188,12 +183,12 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    // Successful sign-in — use location from checkLocation() return value directly,
-    // not from state, because setState is async and the state hasn't re-rendered yet
-    await logSignInAction(values.email, (location.country || location.latitude != null)
-      ? { country: location.country ?? undefined, latitude: location.latitude ?? undefined, longitude: location.longitude ?? undefined }
-      : undefined
-    ).catch(() => {})
+    // Use location from checkLocation() return value — not from state (setState is async)
+    await logSignInAction(values.email, {
+      country: location.country,
+      latitude: location.latitude,
+      longitude: location.longitude,
+    }).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }
@@ -229,10 +224,11 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    await logSignInAction(emailForOtp, (detectedCountry || detectedCoords)
-      ? { country: detectedCountry ?? undefined, ...detectedCoords }
-      : undefined
-    ).catch(() => {})
+    await logSignInAction(emailForOtp, {
+      country: detectedCountry,
+      latitude: detectedCoords?.latitude ?? null,
+      longitude: detectedCoords?.longitude ?? null,
+    }).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }

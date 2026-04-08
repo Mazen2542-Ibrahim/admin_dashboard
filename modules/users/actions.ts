@@ -176,18 +176,17 @@ export async function updateProfileAction(formData: unknown) {
  *  lastLoginAt is handled server-side by databaseHooks.session.create.after. */
 export async function logSignInAction(
   email: string,
-  location?: { country?: string; latitude?: number; longitude?: number }
+  location: { country: string | null; latitude: number | null; longitude: number | null }
 ): Promise<void> {
-  if (!location?.country && location?.latitude == null) return
   try {
     const user = await getUserByEmail(email)
     if (!user) return
     await db
       .update(users)
       .set({
-        lastLoginCountry: location.country ?? null,
-        lastLoginLatitude: location.latitude ?? null,
-        lastLoginLongitude: location.longitude ?? null,
+        lastLoginCountry: location.country,
+        lastLoginLatitude: location.latitude,
+        lastLoginLongitude: location.longitude,
       })
       .where(eq(users.id, user.id))
   } catch {
