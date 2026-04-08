@@ -16,6 +16,20 @@ export const auth = betterAuth({
       generateId: () => crypto.randomUUID(),
     },
   },
+  databaseHooks: {
+    session: {
+      create: {
+        after: async (session) => {
+          // Update lastLoginAt whenever a new session is created (i.e. on sign-in)
+          await db
+            .update(schema.users)
+            .set({ lastLoginAt: new Date() })
+            .where(eq(schema.users.id, session.userId))
+            .catch(() => {})
+        },
+      },
+    },
+  },
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: {

@@ -172,28 +172,26 @@ export async function updateProfileAction(formData: unknown) {
   }
 }
 
-/** Called client-side after a successful sign-in to update last-login timestamp and location fields. */
+/** Called client-side after a successful sign-in to persist location fields.
+ *  lastLoginAt is handled server-side by databaseHooks.session.create.after. */
 export async function logSignInAction(
   email: string,
   location?: { country?: string; latitude?: number; longitude?: number }
 ): Promise<void> {
+  if (!location?.country && location?.latitude == null) return
   try {
     const user = await getUserByEmail(email)
     if (!user) return
-    await updateLastLoginAt(user.id).catch(() => {})
-    if (location?.country || location?.latitude != null) {
-      await db
-        .update(users)
-        .set({
-          lastLoginCountry: location.country ?? null,
-          lastLoginLatitude: location.latitude ?? null,
-          lastLoginLongitude: location.longitude ?? null,
-        })
-        .where(eq(users.id, user.id))
-        .catch(() => {})
-    }
+    await db
+      .update(users)
+      .set({
+        lastLoginCountry: location.country ?? null,
+        lastLoginLatitude: location.latitude ?? null,
+        lastLoginLongitude: location.longitude ?? null,
+      })
+      .where(eq(users.id, user.id))
   } catch {
-    // Never throw
+    // Never throw from a sign-in flow
   }
 }
 
