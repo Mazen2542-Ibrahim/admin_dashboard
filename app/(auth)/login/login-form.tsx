@@ -50,6 +50,7 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
   const [unverifiedEmail, setUnverifiedEmail] = React.useState("")
   const [geoState, setGeoState] = React.useState<GeoState>("idle")
   const [detectedCountry, setDetectedCountry] = React.useState<string | null>(null)
+  const [detectedCoords, setDetectedCoords] = React.useState<{ latitude: number; longitude: number } | null>(null)
 
   // Start location check eagerly on mount so it's done (or nearly done) by the time
   // the user fills in their credentials and clicks submit.
@@ -91,6 +92,7 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
         })
       })
       coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+      setDetectedCoords(coords)
     } catch (err) {
       const geoError = err as GeolocationPositionError
       if (geoError?.code === 1) {
@@ -185,7 +187,10 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
     }
 
     // Successful sign-in
-    logSignInAction(values.email, detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
+    logSignInAction(values.email, (detectedCountry || detectedCoords)
+      ? { country: detectedCountry ?? undefined, ...detectedCoords }
+      : undefined
+    ).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }
@@ -221,7 +226,10 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    logSignInAction(emailForOtp, detectedCountry ? { country: detectedCountry } : undefined).catch(() => {})
+    logSignInAction(emailForOtp, (detectedCountry || detectedCoords)
+      ? { country: detectedCountry ?? undefined, ...detectedCoords }
+      : undefined
+    ).catch(() => {})
     router.push(callbackUrl)
     router.refresh()
   }

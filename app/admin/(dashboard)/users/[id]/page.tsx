@@ -9,7 +9,14 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { formatDate, getInitials } from "@/lib/utils"
 import { ShieldCheck, ShieldOff, Lock } from "lucide-react"
+import { Separator } from "@/components/ui/separator"
 import { Breadcrumb } from "@/components/layout/breadcrumb"
+
+function countryCodeToFlag(code: string) {
+  return code.toUpperCase().replace(/./g, (c) =>
+    String.fromCodePoint(127397 + c.charCodeAt(0))
+  )
+}
 
 interface UserDetailPageProps {
   params: { id: string }
@@ -83,6 +90,33 @@ export default async function UserDetailPage({ params }: UserDetailPageProps) {
             <p className="text-xs text-muted-foreground sm:pb-1 shrink-0">
               Member since {formatDate(user.createdAt)}
             </p>
+          </div>
+
+          <Separator className="mt-1" />
+
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Last login</p>
+              <p className="font-medium">
+                {user.lastLoginAt ? formatDate(user.lastLoginAt) : "Never"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Location</p>
+              <p className="font-medium">
+                {user.lastLoginCountry
+                  ? `${countryCodeToFlag(user.lastLoginCountry)} ${user.lastLoginCountry}`
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Coordinates</p>
+              <p className="font-mono text-xs font-medium">
+                {user.lastLoginLatitude != null && user.lastLoginLongitude != null
+                  ? `${user.lastLoginLatitude.toFixed(4)}, ${user.lastLoginLongitude.toFixed(4)}`
+                  : "—"}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>

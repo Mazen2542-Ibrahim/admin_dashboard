@@ -10,6 +10,9 @@ export interface User {
   role: string
   isActive: boolean
   lastLoginAt?: Date | null
+  lastLoginCountry: string | null
+  lastLoginLatitude: number | null
+  lastLoginLongitude: number | null
   failedLoginAttempts: number
   lockedUntil: Date | null
   themePreference: string
