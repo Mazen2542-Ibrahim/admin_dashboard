@@ -67,35 +67,39 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
     | { ok: true; country: string | null; latitude: number | null; longitude: number | null }
 
   async function checkLocation(): Promise<LocationResult> {
-    if (!locationConfig.requireLocationForAuth) return { ok: true, country: null, latitude: null, longitude: null }
-
-    setGeoState("requesting")
-
-    if (typeof navigator === "undefined" || !navigator.geolocation) {
-      setGeoState("denied")
-      return { ok: false }
-    }
-
+    // GPS prompt + access blocking — only when requireLocationForAuth is on
     let coords: { latitude: number; longitude: number } | null = null
-    try {
-      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          timeout: 8000,
-          maximumAge: 300000,
-          enableHighAccuracy: false,
-        })
-      })
-      coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
-    } catch (err) {
-      const geoError = err as GeolocationPositionError
-      if (geoError?.code === 1) {
-        // PERMISSION_DENIED — user explicitly blocked location access
+
+    if (locationConfig.requireLocationForAuth) {
+      setGeoState("requesting")
+
+      if (typeof navigator === "undefined" || !navigator.geolocation) {
         setGeoState("denied")
         return { ok: false }
       }
-      // POSITION_UNAVAILABLE (2) or TIMEOUT (3) — fall through to IP-based check
+
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            timeout: 8000,
+            maximumAge: 300000,
+            enableHighAccuracy: false,
+          })
+        })
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
+      } catch (err) {
+        const geoError = err as GeolocationPositionError
+        if (geoError?.code === 1) {
+          // PERMISSION_DENIED — user explicitly blocked location access
+          setGeoState("denied")
+          return { ok: false }
+        }
+        // POSITION_UNAVAILABLE (2) or TIMEOUT (3) — fall through to IP-based check
+      }
     }
 
+    // Always call location-check: enforces country restrictions when required,
+    // and captures IP-based country/coords for the user record even when not required
     try {
       const res = await fetch("/api/auth/location-check", {
         method: "POST",
@@ -104,18 +108,21 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       })
       const data = (await res.json()) as { allowed: boolean; country?: string }
       const country = data.country ?? null
-      // Keep state in sync for the OTP path (re-renders between credential submit and OTP submit)
+      // Sync state for the OTP path (component re-renders before OTP submit)
       setDetectedCountry(country)
       setDetectedCoords(coords)
-      if (data.allowed) {
+
+      if (locationConfig.requireLocationForAuth) {
+        if (!data.allowed) {
+          setGeoState("blocked")
+          return { ok: false }
+        }
         setGeoState("approved")
-        return { ok: true, country, latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null }
       }
-      setGeoState("blocked")
-      return { ok: false }
+
+      return { ok: true, country, latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null }
     } catch {
-      // Network error — don't block the user
-      setGeoState("approved")
+      // Network error — never block the user
       return { ok: true, country: null, latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null }
     }
   }
