@@ -25,16 +25,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ allowed: true })
   }
 
-  // Coordinates are required — deny if the client didn't provide them
-  if (latitude == null || longitude == null) {
-    return NextResponse.json({ allowed: false, reason: "location_required" })
-  }
-
   const { allowedCountries } = settings
 
-  // Resolve country: GPS coordinates first, fall back to server-side IP/CDN
+  // Resolve country: GPS coordinates first, fall back to server-side IP/CDN.
+  // Coords may be absent when the device can't determine position (no GPS hardware);
+  // in that case skip reverse-geocoding and rely on IP/CDN detection only.
   const [coordCountry, serverCountry] = await Promise.all([
-    getCountryFromCoordinates(latitude, longitude),
+    latitude != null && longitude != null
+      ? getCountryFromCoordinates(latitude, longitude)
+      : Promise.resolve(null),
     Promise.resolve(getCountryFromHeaders(request.headers)).then(
       (h) => h ?? getCountryFromIp(ip)
     ),
