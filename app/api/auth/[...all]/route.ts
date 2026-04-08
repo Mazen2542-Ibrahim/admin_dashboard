@@ -126,13 +126,27 @@ async function POST(req: NextRequest) {
       }
 
       if (settings.emailOtpEnabled) {
+        const identifier = `otp-login-${user.id}`
+
+        // If an OTP was sent within the last 60 seconds, reuse it instead of
+        // generating a new one. This prevents a second submit (e.g. user clicks
+        // back and retries) from invalidating the code already in their inbox.
+        const [existingOtp] = await db
+          .select()
+          .from(verifications)
+          .where(eq(verifications.identifier, identifier))
+          .limit(1)
+
+        const sixtySecondsAgo = new Date(Date.now() - 60 * 1000)
+        if (existingOtp && existingOtp.expiresAt > new Date() && existingOtp.createdAt > sixtySecondsAgo) {
+          return NextResponse.json({ code: "OTP_REQUIRED" }, { status: 200 })
+        }
+
         // Generate 6-digit OTP, hash before storage
         const otp = String(crypto.getRandomValues(new Uint32Array(1))[0] % 900000 + 100000)
         const otpHash = await hashPassword(otp)
         const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
-        const identifier = `otp-login-${user.id}`
 
-        // Delete any existing OTP for this user then insert fresh
         await db.delete(verifications).where(eq(verifications.identifier, identifier))
         await db.insert(verifications).values({
           id: crypto.randomUUID(),
@@ -141,12 +155,22 @@ async function POST(req: NextRequest) {
           expiresAt,
         })
 
-        // Fire-and-forget: don't block the response on SMTP delivery
-        sendTemplateEmailByName("login-otp", user.email, {
-          userName: user.name,
-          otpCode: otp,
-          appName: appConfig.name,
-        }).catch((err) => console.error("[sign-in] OTP email failed:", err))
+        // Await delivery — surface SMTP failures to the user instead of silently dropping
+        try {
+          await sendTemplateEmailByName("login-otp", user.email, {
+            userName: user.name,
+            otpCode: otp,
+            appName: appConfig.name,
+          })
+        } catch (err) {
+          console.error("[sign-in] OTP email failed:", err)
+          // Clean up the stored OTP so the next attempt generates a fresh one
+          await db.delete(verifications).where(eq(verifications.identifier, identifier)).catch(() => {})
+          return NextResponse.json(
+            { error: "Failed to send verification code. Please try again." },
+            { status: 500 }
+          )
+        }
 
         return NextResponse.json({ code: "OTP_REQUIRED" }, { status: 200 })
       }

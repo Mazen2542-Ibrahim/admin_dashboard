@@ -147,6 +147,11 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
+    if (res.status === 500 && data.error) {
+      toast({ title: "Could not send code", description: data.error, variant: "destructive" })
+      return
+    }
+
     if (res.status === 429) {
       const retryAfter = res.headers.get("Retry-After")
       const seconds = retryAfter ? parseInt(retryAfter, 10) : null
