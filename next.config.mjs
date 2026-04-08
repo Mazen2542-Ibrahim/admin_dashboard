@@ -21,19 +21,20 @@ const nextConfig = {
     ]
     return [
       {
-        // Auth pages need geolocation for location-based login checks
-        source: "/(login|register)",
-        headers: [
-          ...baseHeaders,
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
-        ],
-      },
-      {
-        // All other pages: geolocation blocked
+        // Catch-all: geolocation blocked everywhere by default
         source: "/:path*",
         headers: [
           ...baseHeaders,
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+      {
+        // Auth pages override: geolocation allowed for location-based login checks
+        // Must come AFTER the catch-all so it wins on /login and /register
+        source: "/(login|register)",
+        headers: [
+          ...baseHeaders,
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(self)" },
         ],
       },
     ]
