@@ -186,8 +186,8 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    // Successful sign-in
-    logSignInAction(values.email, (detectedCountry || detectedCoords)
+    // Successful sign-in — await so the DB write completes before navigating
+    await logSignInAction(values.email, (detectedCountry || detectedCoords)
       ? { country: detectedCountry ?? undefined, ...detectedCoords }
       : undefined
     ).catch(() => {})
@@ -226,7 +226,7 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    logSignInAction(emailForOtp, (detectedCountry || detectedCoords)
+    await logSignInAction(emailForOtp, (detectedCountry || detectedCoords)
       ? { country: detectedCountry ?? undefined, ...detectedCoords }
       : undefined
     ).catch(() => {})
