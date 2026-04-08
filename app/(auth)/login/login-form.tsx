@@ -62,15 +62,18 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
     defaultValues: { otp: "" },
   })
 
-  async function checkLocation(): Promise<boolean> {
-    if (!locationConfig.requireLocationForAuth) return true
-    if (geoState === "approved") return true
+  type LocationResult =
+    | { ok: false }
+    | { ok: true; country: string | null; latitude: number | null; longitude: number | null }
+
+  async function checkLocation(): Promise<LocationResult> {
+    if (!locationConfig.requireLocationForAuth) return { ok: true, country: null, latitude: null, longitude: null }
 
     setGeoState("requesting")
 
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setGeoState("denied")
-      return false
+      return { ok: false }
     }
 
     let coords: { latitude: number; longitude: number } | null = null
@@ -83,16 +86,14 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
         })
       })
       coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude }
-      setDetectedCoords(coords)
     } catch (err) {
       const geoError = err as GeolocationPositionError
       if (geoError?.code === 1) {
         // PERMISSION_DENIED — user explicitly blocked location access
         setGeoState("denied")
-        return false
+        return { ok: false }
       }
-      // POSITION_UNAVAILABLE (2) or TIMEOUT (3) — device can't resolve position
-      // (common on desktops with no GPS hardware). Fall through to IP-based check.
+      // POSITION_UNAVAILABLE (2) or TIMEOUT (3) — fall through to IP-based check
     }
 
     try {
@@ -102,25 +103,28 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
         body: JSON.stringify(coords ?? {}),
       })
       const data = (await res.json()) as { allowed: boolean; country?: string }
-      setDetectedCountry(data.country ?? null)
+      const country = data.country ?? null
+      // Keep state in sync for the OTP path (re-renders between credential submit and OTP submit)
+      setDetectedCountry(country)
+      setDetectedCoords(coords)
       if (data.allowed) {
         setGeoState("approved")
-        return true
+        return { ok: true, country, latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null }
       }
       setGeoState("blocked")
-      return false
+      return { ok: false }
     } catch {
       // Network error — don't block the user
       setGeoState("approved")
-      return true
+      return { ok: true, country: null, latitude: coords?.latitude ?? null, longitude: coords?.longitude ?? null }
     }
   }
 
   async function onLoginSubmit(values: LoginFormValues) {
     setUnverifiedEmail("")
 
-    const locationOk = await checkLocation()
-    if (!locationOk) return
+    const location = await checkLocation()
+    if (!location.ok) return
 
     const res = await fetch("/api/auth/sign-in/email", {
       method: "POST",
@@ -177,9 +181,10 @@ export function LoginForm({ locationConfig }: LoginFormProps) {
       return
     }
 
-    // Successful sign-in — await so the DB write completes before navigating
-    await logSignInAction(values.email, (detectedCountry || detectedCoords)
-      ? { country: detectedCountry ?? undefined, ...detectedCoords }
+    // Successful sign-in — use location from checkLocation() return value directly,
+    // not from state, because setState is async and the state hasn't re-rendered yet
+    await logSignInAction(values.email, (location.country || location.latitude != null)
+      ? { country: location.country ?? undefined, latitude: location.latitude ?? undefined, longitude: location.longitude ?? undefined }
       : undefined
     ).catch(() => {})
     router.push(callbackUrl)
